@@ -8,4 +8,11 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 vtkh/build/*
-vtkm/build/
+vtkm/build/*
+scripts/gs_data/*
+scripts/surface_area_results/*
+scripts/volume_results/*
+scripts/performance_results/*
+scripts/decompress_tool/build/*
+
+

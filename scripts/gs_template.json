@@ -1,0 +1,15 @@
+{
+    "L": SIZE,
+    "Du": 0.2,
+    "Dv": 0.1,
+    "F": 0.02,
+    "k": 0.048,
+    "dt": 1.0,
+    "plotgap": GAP,
+    "steps": STEPS,
+    "noise": 0.01,
+    "output": "NNNN",
+    "adios_config": "adios2.xml",
+    "adios_span" : false,
+    "mesh_type": "image"
+}
