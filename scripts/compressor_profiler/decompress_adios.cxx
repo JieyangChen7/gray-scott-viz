@@ -16,17 +16,19 @@ int main(int argc, char *argv[]) {
 
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
-  adios2::IO inIO = adios.DeclareIO("SimulationOutput");
+  adios2::IO inIO = adios.DeclareIO("CompressedSimulationOutput");
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
+
+
 
   adios2::Variable<double> varU = inIO.InquireVariable<double>("U");
   adios2::Variable<double> varV = inIO.InquireVariable<double>("V");
   const adios2::Variable<int> varStep = inIO.InquireVariable<int>("step");
   adios2::Dims shapeU = varU.Shape();
-  adios2::Dims shapeV = varU.Shape();
+  adios2::Dims shapeV = varV.Shape();
 
 
-  adios2::IO outIO = adios.DeclareIO("DecompressedOutput");
+  adios2::IO outIO = adios.DeclareIO("DecompressedSimulationOutput");
   adios2::Engine writer = outIO.Open("decompressed_" + pb_filename, adios2::Mode::Write);
 
   adios2::Variable<double> varU2 = outIO.DefineVariable<double>("U", {shapeU[0], shapeU[1], shapeU[2]},

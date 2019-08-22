@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
   unsigned int n, b, nb, d, start_iter, end_iter;
   long long s, e;
   int retval;
+  int existU, existV;
 
   float initialization_time = .0f;
   float step_setup_time = .0f;
@@ -66,6 +67,11 @@ int main(int argc, char *argv[]) {
   char* output_file = argv[6];
   start_iter = atoi(argv[7]);
   end_iter   = atoi(argv[8]);
+  existU  = atoi(argv[9]);
+  existV  = atoi(argv[10]);
+
+  //std::cout << "test" << std::endl;
+
 
   if (rank == 0 && n % b != 0) {
     std::cout << "<data partition block size> should be able to divide <simulation size>" << std::endl;
@@ -112,59 +118,9 @@ int main(int argc, char *argv[]) {
     //std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
   }
 
-
-
-  // int x = (n/comm_size) * rank;
-  // int y = 0;
-  // int z = 0;
-  // adios2::Box<adios2::Dims> sel({x, y, z}, {n/comm_size, n, n});
-  // selections.push_back(sel);
-  // domain_ids.push_back(rank);
-  // std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
-
-
-  // int x = 0;
-  // int y = 0;
-  // int z = 0;
-  // adios2::Box<adios2::Dims> sel({x, y, z}, {b, b, b});
-  // selections.push_back(sel);
-  // domain_ids.push_back(rank);
-  // std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
-
-
-  // x = 24;
-  // y = 0;
-  // z = 0;
-  // adios2::Box<adios2::Dims> sel2({x, y, z}, {b, b, b});
-  // selections.push_back(sel2);
-  // domain_ids.push_back(rank);
-  // std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
-
-  // x = 24;
-  // y = 24;
-  // z = 24;
-  // adios2::Box<adios2::Dims> sel3({x, y, z}, {b, b, b});
-  // selections.push_back(sel3);
-  // domain_ids.push_back(rank);
-  // std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
-
-  // x = 24;
-  // y = 24;
-  // z = 0;
-  // adios2::Box<adios2::Dims> sel4({x, y, z}, {b, b, b});
-  // selections.push_back(sel4);
-  // domain_ids.push_back(rank);
-  // std::cout << "p" << rank << " get: (" << x << ", " << y << ", " << z << ")" << std::endl; 
-
-  //int x = rank >> 0 & 1;
-  //int y = rank >> 1 & 1;
-  //int z = rank >> 2 & 1;
-
-  //std::cout << "process " << rank << " has index (" << x << ", " << y << ", " << z << ")" << std::endl;
-
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
-  adios2::IO inIO = adios.DeclareIO("SimulationOutput");
+  adios2::IO inIO = adios.DeclareIO("DecompressedSimulationOutput");
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
 
   //MPI_Barrier(MPI_COMM_WORLD);
@@ -181,12 +137,19 @@ int main(int argc, char *argv[]) {
           break;
       }
       if (iter < start_iter) {
-	  iter++;
+	        iter++;
       	  continue;
       }
       
-      adios2::Variable<double> varU = inIO.InquireVariable<double>("U");
-      adios2::Variable<double> varV = inIO.InquireVariable<double>("V");
+      adios2::Variable<double> varU;
+      adios2::Variable<double> varV;
+
+      if (existU > -1) {
+        varU = inIO.InquireVariable<double>("U");
+      }
+      if (existV > -1) {
+        varV = inIO.InquireVariable<double>("V");
+      }
       const adios2::Variable<int> varStep = inIO.InquireVariable<int>("step");
 
 
@@ -197,8 +160,16 @@ int main(int argc, char *argv[]) {
 
       //adios2::Box<adios2::Dims> sel({x * 24, y * 24, z * 24}, {24, 24, 24});
       //varU.SetSelection(sel);
+      adios2::Dims shapeU;
+      adios2::Dims shapeV;
+      
+      if (existU > -1) {
+        shapeU = varU.Shape();
+      }
 
-      adios2::Dims shape = varU.Shape();
+      if (existV > -1) {
+        shapeV = varV.Shape();
+      }
       //std::cout << "Shape: " << shape[0] << ", " << shape[1] << ", " << shape[2] << std::endl;
 
       //std::vector<double> pointvar_u;
@@ -215,15 +186,19 @@ int main(int argc, char *argv[]) {
       
       
       for (int idx =0; idx < domain_ids.size(); idx++) {
-        varU.SetSelection(selections[idx]);
-        std::vector<double> * u = new std::vector<double>();
-        reader.Get(varU, *u, adios2::Mode::Sync);
-        u_pointers.push_back(u);
+        if (existU > -1) {
+          varU.SetSelection(selections[idx]);
+          std::vector<double> * u = new std::vector<double>();
+          reader.Get(varU, *u, adios2::Mode::Sync);
+          u_pointers.push_back(u);
+        }
 
-        varV.SetSelection(selections[idx]);
-        std::vector<double> * v = new std::vector<double>();
-        reader.Get(varV, *v, adios2::Mode::Sync);
-        v_pointers.push_back(v);
+        if (existV > -1) {
+          varV.SetSelection(selections[idx]);
+          std::vector<double> * v = new std::vector<double>();
+          reader.Get(varV, *v, adios2::Mode::Sync);
+          v_pointers.push_back(v);
+        }
       }
       load_decompress_time = float(PAPI_get_real_usec() - s)/1e6;
 
@@ -242,8 +217,12 @@ int main(int argc, char *argv[]) {
         dataSet = dataSetBuilder.Create(dims, org, spc);
 
         vtkm::cont::DataSetFieldAdd dsf;
-        dsf.AddPointField(dataSet, dfname_u, *(u_pointers[idx]));
-        dsf.AddPointField(dataSet, dfname_v, *(v_pointers[idx]));
+        if (existU > -1) {
+          dsf.AddPointField(dataSet, dfname_u, *(u_pointers[idx]));
+        }
+        if (existV > -1) {
+          dsf.AddPointField(dataSet, dfname_v, *(v_pointers[idx]));
+        }
         data_set.AddDomain(dataSet, domain_ids[idx]);
       }
       build_dataset_time = float(PAPI_get_real_usec() - s)/1e6;
@@ -277,15 +256,22 @@ int main(int argc, char *argv[]) {
       s = PAPI_get_real_usec();
       vtkh::MarchingCubes marcher;
       marcher.SetInput(&data_set);
+
       marcher.SetField(dfname_v); 
 
-      const int num_vals = 2;
+      const int num_vals = 10;
       double iso_vals [num_vals];
       iso_vals[0] = -1;
-      iso_vals[1] = 0.18;
-      // iso_vals[2] = 0.95;
-      // iso_vals[3] = 0.90;
-      //iso_vals[0] = 0.03;
+      iso_vals[1] = 0.10;
+      iso_vals[2] = 0.12;
+      iso_vals[3] = 0.14;
+      iso_vals[4] = 0.16;
+      iso_vals[5] = 0.18;
+      iso_vals[6] = 0.20;
+      iso_vals[7] = 0.22;
+      iso_vals[8] = 0.24;
+      iso_vals[9] = 0.26;
+
 
 
       marcher.SetIsoValues(iso_vals, num_vals);
@@ -304,7 +290,7 @@ int main(int argc, char *argv[]) {
       // std::cout << "Bound: X(" << bounds.X.Min << " - " <<  bounds.X.Max << ")" <<std::endl;
       // std::cout << "Bound: Y(" << bounds.Y.Min << " - " <<  bounds.Y.Max << ")" <<std::endl;
       // std::cout << "Bound: Z(" << bounds.Z.Min << " - " <<  bounds.Z.Max << ")" <<std::endl;
-      vtkm::Bounds bounds(vtkm::Range(0, shape[2]-1), vtkm::Range(0, shape[1]-1), vtkm::Range(0, shape[0]-1));
+      vtkm::Bounds bounds(vtkm::Range(0, shapeV[2]-1), vtkm::Range(0, shapeV[1]-1), vtkm::Range(0, shapeV[0]-1));
       vtkm::rendering::Camera camera;
       camera.ResetToBounds(bounds);
 
@@ -351,8 +337,12 @@ int main(int argc, char *argv[]) {
 
     
       for (int idx =0; idx < domain_ids.size(); idx++) {
-        delete u_pointers[idx];
-        delete v_pointers[idx];
+        if (existU > -1) {
+          delete u_pointers[idx];
+        }
+        if (existV > -1) {
+          delete v_pointers[idx];
+        }
       }
 
       MPI_Reduce(&initialization_time, &max_initialization_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -374,7 +364,7 @@ int main(int argc, char *argv[]) {
         std::cout << std::setw(25) << std::left <<"rendering_time: "       << max_rendering_time       <<" s" << std::endl;
         */
 
-      	std::cout << iter << "," << max_load_decompress_time << "," << max_mc_time << "," << max_rendering_time << std::endl;
+      	std::cout << step[0] << "," << max_load_decompress_time << "," << max_mc_time << "," << max_rendering_time << std::endl;
       }
 
 

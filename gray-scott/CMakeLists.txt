@@ -8,6 +8,8 @@ endif()
 
 project(gray-scott C CXX)
 
+set(ADIOS2_DIR /home/4yc/opt/adios/lib/cmake/adios2)
+
 find_package(MPI REQUIRED)
 find_package(ADIOS2 REQUIRED)
 

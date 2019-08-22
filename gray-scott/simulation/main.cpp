@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
 
     /* added for compression test */
-    int mode = std::atoi(argv[2]); // 1 compress only u; 2 compress only v; 3 compress both;
+   /* int mode = std::atoi(argv[2]); // 1 compress only u; 2 compress only v; 3 compress both;
     int compressor = std::atoi(argv[3]); // 0 no compression; 1 MGARD; 2 SZ; 3 ZFP;
     float tolerance_u = std::atof(argv[4]);
     float tolerance_v = std::atof(argv[5]);
@@ -208,6 +208,7 @@ int main(int argc, char **argv)
             varV.AddOperation(szOpV, {{adios2::ops::zfp::key::accuracy, std::to_string(tolerance_v)}});
         }
     }
+    */
     
 
     adios2::Variable<int> varStep = io.DefineVariable<int>("step");
