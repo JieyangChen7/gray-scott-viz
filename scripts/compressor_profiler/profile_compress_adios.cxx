@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
 
-  MPI_Init(NULL, NULL);
+  MPI_Init(&argc, &argv);
   int comm_size, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -47,14 +47,15 @@ int main(int argc, char *argv[]) {
   }
 
   adios2::IO outIO = adios.DeclareIO("CompressedSimulationOutput");
+  outIO.SetEngine("SST");
+  outIO.SetParameters({
+                     {"RendezvousReaderCount", "1"},
+                     {"RegistrationMethod", "File"},
+                     {"QueueLimit", "0"},
+                     {"QueueFullPolicy", "Block"},
+                     {"AlwaysProvideLatestTimestep", "False"}
+                    }); 
   
-  /*std::string output_bp = "compressed_" + 
-                          std::to_string(compressU) + "_" +
-                          std::to_string(toleranceU) + "_" + 
-                          std::to_string(compressV) + "_" + 
-                          std::to_string(toleranceV) + "_" + 
-                          pb_filename;
-  */
   adios2::Engine writer = outIO.Open(output_bp_filename, adios2::Mode::Write);
 
 
@@ -141,10 +142,13 @@ int main(int argc, char *argv[]) {
         std::cout << "," << io_time << std::endl;
       }
       iter++;
+      reader.EndStep();
       writer.EndStep();
 
   }
   //std::cout << io_time << std::endl;
+  reader.Close();
   writer.Close();
+  MPI_Finalize();
   return 0;
 }

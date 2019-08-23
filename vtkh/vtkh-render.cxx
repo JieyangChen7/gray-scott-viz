@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <vector>
 
-#include "papi.h"
-
+//#include "papi.h"
+#include <chrono>
 
 int main(int argc, char *argv[]) {
 
@@ -30,27 +30,27 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   unsigned int n, b, nb, d, start_iter, end_iter;
-  long long s, e;
+  std::chrono::high_resolution_clock::time_point s, e;
   int retval;
   int existU, existV;
 
-  float initialization_time = .0f;
-  float step_setup_time = .0f;
-  float load_decompress_time = .0f;
-  float build_dataset_time = .0f;
-  float mc_setup_time = .0f;
-  float mc_time = .0f;
-  float rendering_setup_time = .0f;
-  float rendering_time = .0f;
+  double initialization_time = .0f;
+  double step_setup_time = .0f;
+  double load_decompress_time = .0f;
+  double build_dataset_time = .0f;
+  double mc_setup_time = .0f;
+  double mc_time = .0f;
+  double rendering_setup_time = .0f;
+  double rendering_time = .0f;
 
-  float max_initialization_time = .0f;
-  float max_step_setup_time = .0f;
-  float max_load_decompress_time = .0f; 
-  float max_build_dataset_time = .0f;
-  float max_mc_setup_time = .0f;
-  float max_mc_time = .0f;
-  float max_rendering_setup_time = .0f;
-  float max_rendering_time = .0f;
+  double max_initialization_time = .0f;
+  double max_step_setup_time = .0f;
+  double max_load_decompress_time = .0f; 
+  double max_build_dataset_time = .0f;
+  double max_mc_setup_time = .0f;
+  double max_mc_time = .0f;
+  double max_rendering_setup_time = .0f;
+  double max_rendering_time = .0f;
 
 
   if (rank == 0 && argc < 5) {
@@ -78,11 +78,11 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  if((retval = PAPI_library_init(PAPI_VER_CURRENT)) != PAPI_VER_CURRENT )
-  {
-      printf("PAPI initialization error! \n");
-      MPI_Finalize();
-  }
+  //if((retval = PAPI_library_init(PAPI_VER_CURRENT)) != PAPI_VER_CURRENT )
+  //{
+  //    printf("PAPI initialization error! \n");
+  //    MPI_Finalize();
+  //}
 
   if (d == 1) {
     vtkh::ForceSerial();
@@ -99,14 +99,13 @@ int main(int argc, char *argv[]) {
 
 
   //MPI_Barrier(MPI_COMM_WORLD);
-  s = PAPI_get_real_usec();
+  s = std::chrono::high_resolution_clock::now();
 
   vtkh::SetMPICommHandle(MPI_Comm_c2f(MPI_COMM_WORLD));
   // Data partition
   std::vector<adios2::Box<adios2::Dims>> selections;
   std::vector<int> domain_ids;
   nb = n / b;
-
 
   for (unsigned int i = rank*nb*nb*nb/comm_size; i < (rank+1)*nb*nb*nb/comm_size; i++){
     unsigned int x = (i%nb)*b;
@@ -121,24 +120,40 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("DecompressedSimulationOutput");
+  inIO.SetEngine("SST");
+
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
 
   //MPI_Barrier(MPI_COMM_WORLD);
-  initialization_time = float(PAPI_get_real_usec() - s)/1e6;
+  e = std::chrono::high_resolution_clock::now();
+  initialization_time = std::chrono::duration<double>(e - s).count();
   
-  int iter = 0;
-  while (iter < end_iter) {
+  while (true) {
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
 
       adios2::StepStatus status = reader.BeginStep(); 
       //status = reader.BeginStep(); 
       if (status != adios2::StepStatus::OK) {
+          //std::cout << "Step error" << std::endl;
           break;
       }
-      if (iter < start_iter) {
-	        iter++;
+      const adios2::Variable<int> varStep = inIO.InquireVariable<int>("step");
+      std::vector<int> step;
+      reader.Get(varStep, step, adios2::Mode::Sync);
+ 
+      //std::cout << "Step =" << step[0] << std::endl;
+     
+      if (step[0] < start_iter) {
+          // std::cout << "continue" << std::endl;
+ 
+          reader.EndStep();
       	  continue;
+      } else if(step[0] >= end_iter){
+           //std::cout << "Step break" << std::endl;
+
+          reader.EndStep();
+ 	  break;
       }
       
       adios2::Variable<double> varU;
@@ -150,13 +165,9 @@ int main(int argc, char *argv[]) {
       if (existV > -1) {
         varV = inIO.InquireVariable<double>("V");
       }
-      const adios2::Variable<int> varStep = inIO.InquireVariable<int>("step");
-
-
-      std::vector<int> step;
-      reader.Get(varStep, step, adios2::Mode::Sync);
       //std::cout <<"Process "<<rank <<" is working on step: " << step[0] << std::endl;
-      step_setup_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      step_setup_time = std::chrono::duration<double>(e - s).count();
 
       //adios2::Box<adios2::Dims> sel({x * 24, y * 24, z * 24}, {24, 24, 24});
       //varU.SetSelection(sel);
@@ -180,7 +191,7 @@ int main(int argc, char *argv[]) {
       //std::vector<double> pointvar_v;
       //reader.Get(varV, pointvar_v, adios2::Mode::Sync);
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       std::vector<std::vector<double>*> u_pointers;
       std::vector<std::vector<double>*> v_pointers;
       
@@ -200,10 +211,11 @@ int main(int argc, char *argv[]) {
           v_pointers.push_back(v);
         }
       }
-      load_decompress_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      load_decompress_time = std::chrono::duration<double>(e - s).count();
 
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       vtkh::DataSet data_set;
       std::string dfname_u = "pointvar_u";
       std::string dfname_v = "pointvar_v";
@@ -225,7 +237,8 @@ int main(int argc, char *argv[]) {
         }
         data_set.AddDomain(dataSet, domain_ids[idx]);
       }
-      build_dataset_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      build_dataset_time = std::chrono::duration<double>(e - s).count();
       // vtkm::Id3 dims(48, 48, 48);
       // vtkm::Id3 org(0, 0, 0);
       // vtkm::Id3 spc(1, 1, 1);
@@ -253,7 +266,7 @@ int main(int argc, char *argv[]) {
       // vtkh::DataSet data_set;
       // data_set.AddDomain(dataSet, rank);
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       vtkh::MarchingCubes marcher;
       marcher.SetInput(&data_set);
 
@@ -277,14 +290,16 @@ int main(int argc, char *argv[]) {
       marcher.SetIsoValues(iso_vals, num_vals);
       //marcher.AddMapField(dfname_u);
       marcher.AddMapField(dfname_v);
-      mc_setup_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      mc_setup_time = std::chrono::duration<double>(e - s).count();
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       marcher.Update();
-      mc_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      mc_time = std::chrono::duration<double>(e - s).count();
 
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       vtkh::DataSet *iso_output = marcher.GetOutput();
       // vtkm::Bounds bounds = iso_output->GetGlobalBounds();
       // std::cout << "Bound: X(" << bounds.X.Min << " - " <<  bounds.X.Max << ")" <<std::endl;
@@ -326,11 +341,13 @@ int main(int argc, char *argv[]) {
       tracer.SetColorTable(color_map);
       tracer.SetRange(vtkm::Range(0, 0.5));
       scene.AddRenderer(&tracer);  
-      rendering_setup_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      rendering_setup_time = std::chrono::duration<double>(e - s).count();
 
-      s = PAPI_get_real_usec();
+      s = std::chrono::high_resolution_clock::now();
       scene.Render();
-      rendering_time = float(PAPI_get_real_usec() - s)/1e6;
+      e = std::chrono::high_resolution_clock::now();
+      rendering_time = std::chrono::duration<double>(e - s).count();
 
       //vtkm::Range r = color_map.GetRange();
       //std::cout << "Range is: " << r.Min << " - " << r.Max << std::endl;
@@ -345,14 +362,14 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      MPI_Reduce(&initialization_time, &max_initialization_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&step_setup_time, &max_step_setup_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&load_decompress_time, &max_load_decompress_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&build_dataset_time, &max_build_dataset_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&mc_setup_time, &max_mc_setup_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&mc_time, &max_mc_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&rendering_setup_time, &max_rendering_setup_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
-      MPI_Reduce(&rendering_time, &max_rendering_time, 1, MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&initialization_time, &max_initialization_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&step_setup_time, &max_step_setup_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&load_decompress_time, &max_load_decompress_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&build_dataset_time, &max_build_dataset_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&mc_setup_time, &max_mc_setup_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&mc_time, &max_mc_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&rendering_setup_time, &max_rendering_setup_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+      MPI_Reduce(&rendering_time, &max_rendering_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
       if (rank == 0) {
         /*std::cout << std::setw(25) << std::left << "initialization_time: " << max_initialization_time  <<" s" << std::endl;
         std::cout << std::setw(25) << std::left <<"step_setup_time: "      << max_step_setup_time      <<" s" << std::endl;
@@ -366,11 +383,11 @@ int main(int argc, char *argv[]) {
 
       	std::cout << step[0] << "," << max_load_decompress_time << "," << max_mc_time << "," << max_rendering_time << std::endl;
       }
-
-
-      iter++;
+     
+      reader.EndStep();
 
   }
+  reader.Close();
   MPI_Finalize();
   return 0;
 }

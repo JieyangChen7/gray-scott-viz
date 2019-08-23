@@ -10,12 +10,12 @@ find_package(ADIOS2 REQUIRED)
 add_definitions(-DOMPI_SKIP_MPICXX -DMPICH_SKIP_MPICXX)
 
 
-find_library(PAPI papi)
-include_directories(${PAPI_DIR}/include)
+#find_library(PAPI papi)
+#include_directories(${PAPI_DIR}/include)
 
 
 # create our example 
 add_executable(gray-scott-vtkh vtkh-render.cxx)
 
 # link to vtkh
-target_link_libraries(gray-scott-vtkh vtkh_mpi adios2::adios2 ${PAPI})
+target_link_libraries(gray-scott-vtkh vtkh_mpi adios2::adios2)

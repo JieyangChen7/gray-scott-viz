@@ -118,6 +118,14 @@ int main(int argc, char **argv)
     adios2::ADIOS adios(settings.adios_config, comm, adios2::DebugON);
 
     adios2::IO io = adios.DeclareIO("SimulationOutput");
+    //io.SetEngine("SST");
+    //io.SetParameters({
+    //                 {"RendezvousReaderCount", "1"},
+    //		     {"RegistrationMethod", "File"},
+    //                 {"QueueLimit", "0"},
+    //                 {"QueueFullPolicy", "Block"},
+    //                 {"AlwaysProvideLatestTimestep", "False"}
+    //                 });    
 
     if (rank == 0) {
         print_io_settings(io);
@@ -139,15 +147,25 @@ int main(int argc, char **argv)
         define_bpvtk_attribute(settings, io);
     }
 
-    adios2::Variable<double> varU =
-        io.DefineVariable<double>("U", {settings.L, settings.L, settings.L},
-                                  {sim.offset_z, sim.offset_y, sim.offset_x},
-                                  {sim.size_z, sim.size_y, sim.size_x});
 
-    adios2::Variable<double> varV =
-        io.DefineVariable<double>("V", {settings.L, settings.L, settings.L},
+    int storeU = atoi(argv[2]);
+    int storeV = atoi(argv[3]);
+
+    adios2::Variable<double> varU;
+    adios2::Variable<double> varV;
+
+    if (storeU > -1) {
+    	varU = io.DefineVariable<double>("U", {settings.L, settings.L, settings.L},
                                   {sim.offset_z, sim.offset_y, sim.offset_x},
                                   {sim.size_z, sim.size_y, sim.size_x});
+    }
+    if (storeV > -1) {
+    	varV = io.DefineVariable<double>("V", {settings.L, settings.L, settings.L},
+                                  {sim.offset_z, sim.offset_y, sim.offset_x},
+                                  {sim.size_z, sim.size_y, sim.size_x});
+    }
+
+
 
 
     /* added for compression test */
@@ -239,24 +257,32 @@ int main(int argc, char **argv)
             	writer.Put<int>(varStep, &i);
 
             	// provide memory directly from adios buffer
-            	adios2::Variable<double>::Span u_span = writer.Put<double>(varU);
-            	adios2::Variable<double>::Span v_span = writer.Put<double>(varV);
-
-            	// populate spans
-            	sim.u_noghost(u_span.data());
-            	sim.v_noghost(v_span.data());
-
+		if (storeU > -1) {
+	            adios2::Variable<double>::Span u_span = writer.Put<double>(varU);
+                    // populate spans
+                    sim.u_noghost(u_span.data());
+                }
+                  
+                if (storeV > -1) {
+                    adios2::Variable<double>::Span v_span = writer.Put<double>(varV);
+                    // populate spans
+                    sim.v_noghost(v_span.data());
+                }
             	writer.EndStep();
             }
             else
             {
-            	std::vector<double> u = sim.u_noghost();
-            	std::vector<double> v = sim.v_noghost();
-            	writer.BeginStep();
-            	writer.Put<int>(varStep, &i);
-            	writer.Put<double>(varU, u.data());
-            	writer.Put<double>(varV, v.data());
-            	writer.EndStep();
+		writer.BeginStep();
+		writer.Put<int>(varStep, &i);
+		if (storeU > -1) {
+            	    std::vector<double> u = sim.u_noghost();
+		    writer.Put<double>(varU, u.data());
+		}
+	        if (storeV > -1) {
+            	    std::vector<double> v = sim.v_noghost();
+            	    writer.Put<double>(varV, v.data());
+            	}
+                writer.EndStep();
             }
 
             auto end_step = std::chrono::steady_clock::now();
