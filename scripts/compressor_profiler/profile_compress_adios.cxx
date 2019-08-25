@@ -13,18 +13,20 @@ int main(int argc, char *argv[]) {
 
 
   std::string pb_filename = argv[1];
-  std::string xml_filename = argv[2];
+ // std::string xml_filename = argv[2];
 
-  std::string output_bp_filename = argv[3];
+  std::string output_bp_filename = argv[2];
 
-  int compressU = std::atoi(argv[4]); // -1: do not store U; 0: store U without compressor;
+  int compressU = std::atoi(argv[3]); // -1: do not store U; 0: store U without compressor;
  				      // 1: MGARD; 2: SZ; 3: ZFP;
-  float toleranceU = std::atof(argv[5]);
-  int compressV = std::atoi(argv[6]); // -1: do not store V; 0: store V without compressor;
+  float toleranceU = std::atof(argv[4]);
+  int compressV = std::atoi(argv[5]); // -1: do not store V; 0: store V without compressor;
                                       // 1: MGARD; 2: SZ; 3: ZFP;
-  float toleranceV = std::atof(argv[7]);
+  float toleranceV = std::atof(argv[6]);
 
-  adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
+  int useSST = std::atoi(argv[7]);
+
+  adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("SimulationOutput");
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
@@ -47,15 +49,17 @@ int main(int argc, char *argv[]) {
   }
 
   adios2::IO outIO = adios.DeclareIO("CompressedSimulationOutput");
-  outIO.SetEngine("SST");
-  outIO.SetParameters({
+  if (useSST == 1) {
+      outIO.SetEngine("SST");
+      outIO.SetParameters({
                      {"RendezvousReaderCount", "1"},
                      {"RegistrationMethod", "File"},
                      {"QueueLimit", "0"},
                      {"QueueFullPolicy", "Block"},
                      {"AlwaysProvideLatestTimestep", "False"}
                     }); 
-  
+  }
+
   adios2::Engine writer = outIO.Open(output_bp_filename, adios2::Mode::Write);
 
 

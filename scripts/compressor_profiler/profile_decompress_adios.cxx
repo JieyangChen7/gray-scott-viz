@@ -13,21 +13,24 @@ int main(int argc, char *argv[]) {
 
 
   std::string pb_filename = argv[1];
-  std::string xml_filename = argv[2];
+  //std::string xml_filename = argv[2];
 
-  std::string output_bp_filename = argv[3];
+  std::string output_bp_filename = argv[2];
 
-  int compressU = std::atoi(argv[4]); // -1: have not stored U; 0: have stored U
-  int compressV = std::atoi(argv[5]); // -1: have not stored V; 0: have stored V;
-  
+  int compressU = std::atoi(argv[3]); // -1: have not stored U; 0: have stored U
+  int compressV = std::atoi(argv[4]); // -1: have not stored V; 0: have stored V;
+ 
+  int useSST = std::atoi(argv[5]);
+
   //std::cout << "compressU = " << compressU << std::endl;
   //std::cout << "compressV = " << compressV << std::endl;       
 
-  adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
+  adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("CompressedSimulationOutput");
-  inIO.SetEngine("SST");
-  
+  if (useSST == 1) {
+      inIO.SetEngine("SST");
+  }
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
   
   adios2::Variable<double> inVarU;
