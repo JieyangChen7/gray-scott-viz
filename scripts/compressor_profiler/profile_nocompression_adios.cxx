@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
 
-  MPI_Init(NULL, NULL);
+  MPI_Init(&argc, &argv);
   int comm_size, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -117,6 +117,6 @@ int main(int argc, char *argv[]) {
   //std::cout << write_io_time << std::endl;
   //std::cout << read_io_time << std::endl;
   writer.Close();
-
+  MPI_Finalize();
   return 0;
 }

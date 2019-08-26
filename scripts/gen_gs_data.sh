@@ -52,7 +52,7 @@ process_gs_data() {
     _BPNAME=gs_${_SIZE}
     _OUTPUT=nocompressed_${_COMPRESSOR_U}_0_${_COMPRESSOR_V}_0_gs_${_SIZE}
     cd gs_data
-    $NOCOMPRESSION_PROFILER ${_BPNAME}.bp $XMLFILE ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_COMPRESSOR_V}
+    mpirun -np ${COMPRESS_NPROC} $NOCOMPRESSION_PROFILER ${_BPNAME}.bp $XMLFILE ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_COMPRESSOR_V}
     cd ..
 }
 
@@ -63,9 +63,11 @@ compress_gs_data() {
 	_TOL_U=$3
 	_COMPRESSOR_V=$4
 	_TOL_V=$5
+	_SST=$6
 
 	_COMPRESSOR_U_IN=${_COMPRESSOR_U}
 	_COMPRESSOR_V_IN=${_COMPRESSOR_V}
+	
     if ((${_COMPRESSOR_U} > -1))
     then
     	_COMPRESSOR_U_IN=0
@@ -82,26 +84,85 @@ compress_gs_data() {
 	cd gs_data
 	[ -f ${_OUTPUT}.csv ] && rm ${_OUTPUT}.csv
 
-	mpirun -np ${COMPRESS_NPROC} $COMPRESSOR_PROFILER ${_BPNAME}.bp ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_TOL_U} ${_COMPRESSOR_V} ${_TOL_V} 0 >> ${_OUTPUT}.csv
+	mpirun -np ${COMPRESS_NPROC} $COMPRESSOR_PROFILER ${_BPNAME}.bp ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_TOL_U} ${_COMPRESSOR_V} ${_TOL_V} ${_SST} >> ${_OUTPUT}.csv
 	cd ..
 }
 
+# Compress data
+compress_gs_data_remote() {
+        _SIZE=$1
+        _COMPRESSOR_U=$2
+        _TOL_U=$3
+        _COMPRESSOR_V=$4
+        _TOL_V=$5
+        _SST=$6
+        _DIR=$7
+	_HOST=$8
+
+        _COMPRESSOR_U_IN=${_COMPRESSOR_U}
+        _COMPRESSOR_V_IN=${_COMPRESSOR_V}
+
+    if ((${_COMPRESSOR_U} > -1))
+    then
+        _COMPRESSOR_U_IN=0
+    fi
+    if ((${_COMPRESSOR_V} > -1))
+    then
+        _COMPRESSOR_V_IN=0
+    fi
+
+        _BPNAME=nocompressed_${_COMPRESSOR_U_IN}_0_${_COMPRESSOR_V_IN}_0_gs_${_SIZE}
+        _OUTPUT=compressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}
+
+
+        cd gs_data
+        [ -f ${_OUTPUT}.csv ] && rm ${_OUTPUT}.csv
+	CMD='hostname && export PATH='$PATH' && export LD_LIBRARY_PATH='$LD_LIBRARY_PATH' && cd '${_DIR}'/gs_data && mpirun -np '${COMPRESS_NPROC}' '$COMPRESSOR_PROFILER' '${_BPNAME}'.bp '${_OUTPUT}'.bp '${_COMPRESSOR_U}' '${_TOL_U}' '${_COMPRESSOR_V}' '${_TOL_V}' '${_SST}' >> sst_'${_OUTPUT}'.csv'
+	ssh ${_HOST} -X ${CMD}
+        cd ..
+}
+
+
 # Decompress data
-decompress_gs_data() {
+decompress_gs_data_remote() {
 	_SIZE=$1
 	_COMPRESSOR_U=$2
 	_TOL_U=$3
 	_COMPRESSOR_V=$4
 	_TOL_V=$5
+	_SST=$6
+	_DIR=$7
+        _HOST=$8
+
 
 	_BPNAME=compressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}
         _OUTPUT=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}
 
 	cd gs_data
 	[ -f ${_OUTPUT}.csv ] && rm ${_OUTPUT}.csv
-	mpirun -np ${DECOMPRESS_NPROC} $DECOMPRESSOR_PROFILER ${_BPNAME}.bp ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_COMPRESSOR_V} 0 >> ${_OUTPUT}.csv
+	CMD='hostname && export PATH='$PATH' && export LD_LIBRARY_PATH='$LD_LIBRARY_PATH' && cd '${_DIR}'/gs_data && mpirun -np '${DECOMPRESS_NPROC}' '$DECOMPRESSOR_PROFILER' '${_BPNAME}'.bp '${_OUTPUT}'.bp '${_COMPRESSOR_U}' '${_COMPRESSOR_V}' '${_SST}' >> sst_'${_OUTPUT}'.csv'
+	ssh ${_HOST} -X ${CMD}
 	cd ..
 }
+
+
+decompress_gs_data() {
+        _SIZE=$1
+        _COMPRESSOR_U=$2
+        _TOL_U=$3
+        _COMPRESSOR_V=$4
+        _TOL_V=$5
+        _SST=$6
+
+        _BPNAME=compressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}
+        _OUTPUT=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}
+
+        cd gs_data
+        [ -f ${_OUTPUT}.csv ] && rm ${_OUTPUT}.csv
+        mpirun -np ${DECOMPRESS_NPROC} $DECOMPRESSOR_PROFILER ${_BPNAME}.bp ${_OUTPUT}.bp ${_COMPRESSOR_U} ${_COMPRESSOR_V} ${_SST} >> ${_OUTPUT}.csv
+        cd ..
+}
+
 
 # Analyze and compare orginal and decompressed data via Z-Checker
 analyze_gs_data() {
@@ -256,13 +317,18 @@ SIZE=64
 #measure_volume 64 ${STORE_U} 0 ${STORE_V} 0 0 300
 
 
-echo 'measuring performance without compression'
-measure_perf 64 ${STORE_U} 0 ${STORE_V} 0 0 300
+#echo 'measuring performance without compression'
+#measure_perf 64 ${STORE_U} 0 ${STORE_V} 0 0 300
 
 
-#echo 'profile read write without compression for SST' 
-#compress_gs_data 64 ${STORE_U} 0 ${STORE_V} 0 &
-#decompress_gs_data 64 ${STORE_U} 0 ${STORE_V} 0 
+#echo 'profile read write without compression for SST'
+SST=1
+NODE1=login4 
+NODE2=login5
+DIR=/ccs/home/jieyang/dev/gray-scott-viz/scripts
+#compress_gs_data_remote 64 ${STORE_U} 0 ${STORE_V} 0 $SST $DIR $NODE1 &
+#sleep 10
+#decompress_gs_data_remote 64 ${STORE_U} 0 ${STORE_V} 0 $SST $DIR $NODE2 
 
 
 for COMPRESSOR in 1 2 3 # 1=MAGRD; 2=SZ; 3=ZFP
@@ -272,20 +338,26 @@ do
 	for TOL_V in 0.000001 0.00001 0.0001 0.001 0.01 0.1
 	do
 		DUMMY=123
+		#SST=0
 		#echo 'compressing with tolerance = ' $TOL_V
-		#compress_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+		#compress_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
 	    	#echo 'decompressing on data with lossy tolerance = ' $TOL_V
-	    	#decompress_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+	    	#decompress_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-		echo 'analyzing data'
-		analyze_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+		#echo 'analyzing data'
+		#analyze_gs_data ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V
 
-		echo 'performance test on data with lossy tolerance =' $TOL_V
-		memeasure_perf ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300
+		#echo 'performance test on data with lossy tolerance =' $TOL_V
+		#memeasure_perf ${SIZE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300
 
-		echo 'measuring surface area'
-		measure_surface_area 64 ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300
+		#echo 'measuring surface area'
+		#measure_surface_area 64 ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300
+		SST=1
+		compress_gs_data_remote 64 ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE1 &
+		sleep 10
+		decompress_gs_data_remote 64 ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE2
+
 
 	done
 done

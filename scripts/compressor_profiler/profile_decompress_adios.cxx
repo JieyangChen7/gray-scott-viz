@@ -52,12 +52,12 @@ int main(int argc, char *argv[]) {
   adios2::Variable<int> step = outIO.DefineVariable<int>("step");
 
   if (compressU > -1) {
-       std::cout << "compressU" << std::endl;
+       //std::cout << "compressU" << std::endl;
        inVarU  = inIO.InquireVariable<double>("U");
        shapeU = inVarU.Shape();
   }
   if (compressV > -1) {
-       std::cout << "compressV" << std::endl;
+       //std::cout << "compressV" << std::endl;
        inVarV = inIO.InquireVariable<double>("V");
        shapeV = inVarV.Shape();
   }
