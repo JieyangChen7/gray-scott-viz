@@ -22,3 +22,6 @@ scripts/surface_area_results/visitlog.py
 scripts/compressor_profiler/build/*
 *.output
 scripts/performance_results/*.png
+
+!scripts/gs_data/*.csv
+
