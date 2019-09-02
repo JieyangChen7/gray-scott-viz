@@ -1,0 +1,14 @@
+[oakridgepc:20001] *** Process received signal ***
+[oakridgepc:20001] Signal: Segmentation fault (11)
+[oakridgepc:20001] Signal code: Address not mapped (1)
+[oakridgepc:20001] Failing at address: (nil)
+[oakridgepc:20001] [ 0] /lib/x86_64-linux-gnu/libc.so.6(+0x3ef20)[0x7fc978b5ff20]
+[oakridgepc:20001] [ 1] /lib/x86_64-linux-gnu/libc.so.6(+0x451b0)[0x7fc978b661b0]
+[oakridgepc:20001] [ 2] /lib/x86_64-linux-gnu/libc.so.6(atoi+0x10)[0x7fc978b61690]
+[oakridgepc:20001] [ 3] /home/4yc/dev/gray-scott-viz/vtkh/build/gray-scott-vtkh(main+0x31f)[0x55dfd6d2dde2]
+[oakridgepc:20001] [ 4] /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7)[0x7fc978b42b97]
+[oakridgepc:20001] [ 5] /home/4yc/dev/gray-scott-viz/vtkh/build/gray-scott-vtkh(_start+0x2a)[0x55dfd6d2d7da]
+[oakridgepc:20001] *** End of error message ***
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node oakridgepc exited on signal 11 (Segmentation fault).
+--------------------------------------------------------------------------

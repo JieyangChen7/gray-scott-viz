@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
   std::chrono::high_resolution_clock::time_point s, e;
   int retval;
   int existU, existV;
+  int gap;
+  double iso_value;
 
   double initialization_time = .0f;
   double step_setup_time = .0f;
@@ -69,6 +71,8 @@ int main(int argc, char *argv[]) {
   end_iter   = atoi(argv[8]);
   existU  = atoi(argv[9]);
   existV  = atoi(argv[10]);
+  gap = atoi(argv[11]);
+  iso_value = atof(argv[12]);
 
   //std::cout << "test" << std::endl;
 
@@ -88,7 +92,7 @@ int main(int argc, char *argv[]) {
     vtkh::ForceSerial();
   } else if (d == 2) {
     vtkh::ForceCUDA();
-    vtkh::SelectCUDADevice(1);
+    vtkh::SelectCUDADevice(0);
   } else if (d == 3) {
     vtkh::ForceOpenMP();
   }
@@ -120,23 +124,28 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("DecompressedSimulationOutput");
-  inIO.SetEngine("SST");
+  //inIO.SetEngine("SST");
 
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
 
   //MPI_Barrier(MPI_COMM_WORLD);
   e = std::chrono::high_resolution_clock::now();
   initialization_time = std::chrono::duration<double>(e - s).count();
-  
-  while (true) {
-
+ 
+  int iter = 0; 
+  while (iter*gap < end_iter) {
+      //std::cout << iter*gap << std::endl; 
       s = std::chrono::high_resolution_clock::now();
 
       adios2::StepStatus status = reader.BeginStep(); 
       //status = reader.BeginStep(); 
       if (status != adios2::StepStatus::OK) {
-          //std::cout << "Step error" << std::endl;
+          std::cout << "Step error" << std::endl;
           break;
+	  //reader.Close();
+  	  //MPI_Finalize();
+  	  //return 0;
+
       }
       const adios2::Variable<int> varStep = inIO.InquireVariable<int>("step");
       std::vector<int> step;
@@ -144,16 +153,12 @@ int main(int argc, char *argv[]) {
  
       //std::cout << "Step =" << step[0] << std::endl;
      
-      if (step[0] < start_iter) {
+      
+      if (iter*gap < start_iter) {
           // std::cout << "continue" << std::endl;
- 
           reader.EndStep();
-      	  continue;
-      } else if(step[0] >= end_iter){
-           //std::cout << "Step break" << std::endl;
-
-          reader.EndStep();
- 	  break;
+      	  iter++;
+	  continue;
       }
       
       adios2::Variable<double> varU;
@@ -272,20 +277,9 @@ int main(int argc, char *argv[]) {
 
       marcher.SetField(dfname_v); 
 
-      const int num_vals = 10;
+      const int num_vals = 1;
       double iso_vals [num_vals];
-      iso_vals[0] = -1;
-      iso_vals[1] = 0.10;
-      iso_vals[2] = 0.12;
-      iso_vals[3] = 0.14;
-      iso_vals[4] = 0.16;
-      iso_vals[5] = 0.18;
-      iso_vals[6] = 0.20;
-      iso_vals[7] = 0.22;
-      iso_vals[8] = 0.24;
-      iso_vals[9] = 0.26;
-
-
+      iso_vals[0] = iso_value;
 
       marcher.SetIsoValues(iso_vals, num_vals);
       //marcher.AddMapField(dfname_u);
@@ -385,7 +379,7 @@ int main(int argc, char *argv[]) {
       }
      
       reader.EndStep();
-
+      iter++;
   }
   reader.Close();
   MPI_Finalize();

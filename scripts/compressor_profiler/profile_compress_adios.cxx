@@ -84,11 +84,19 @@ int main(int argc, char *argv[]) {
     adios2::Operator szOp =
             adios.DefineOperator("mgardCompressor_u", adios2::ops::LossyMGARD);
             varU.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::to_string(toleranceU)}});
-  } else if (compressU == 2) { // SZ
+  } else if (compressU == 2) { // SZ-ABS
     adios2::Operator szOp =
             adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
-            varU.AddOperation(szOp, {{adios2::ops::sz::key::accuracy, std::to_string(toleranceU)}});
-  } else if (compressU == 3) { // ZFP
+            varU.AddOperation(szOp, {{"abs", std::to_string(toleranceU)}});
+  } else if (compressU == 3) { // SZ-REL
+    adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
+            varU.AddOperation(szOp, {{"rel", std::to_string(toleranceU)}});
+  } else if (compressU == 4) { // SZ-PWE
+    adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
+            varU.AddOperation(szOp, {{"pw", std::to_string(toleranceU)}});
+  } else if (compressU == 5) { // ZFP
     adios2::Operator szOp =
             adios.DefineOperator("ZFPCompressor_u", adios2::ops::LossyZFP);
             varU.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::to_string(toleranceU)}});
@@ -98,11 +106,19 @@ int main(int argc, char *argv[]) {
     adios2::Operator szOp =
             adios.DefineOperator("mgardCompressor_v", adios2::ops::LossyMGARD);
             varV.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::to_string(toleranceV)}});
-  } else if (compressV == 2) { // SZ
+  } else if (compressV == 2) { // SZ-ABS
     adios2::Operator szOp =
             adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
-            varV.AddOperation(szOp, {{adios2::ops::sz::key::accuracy, std::to_string(toleranceV)}});
-  } else if (compressV == 3) { // ZFP
+            varV.AddOperation(szOp, {{"abs", std::to_string(toleranceV)}});
+  } else if (compressV == 3) { // SZ-REL
+    adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
+            varV.AddOperation(szOp, {{"rel", std::to_string(toleranceV)}});
+  } else if (compressV == 4) { // SZ-PW
+    adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
+            varV.AddOperation(szOp, {{"pw", std::to_string(toleranceV)}});
+  } else if (compressV == 5) { // ZFP
     adios2::Operator szOp =
             adios.DefineOperator("ZFPCompressor_v", adios2::ops::LossyZFP);
             varV.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::to_string(toleranceV)}});
