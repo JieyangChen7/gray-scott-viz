@@ -7,7 +7,7 @@
     "dt": 1.0,
     "plotgap": GAP,
     "steps": STEPS,
-    "noise": 0.01,
+    "noise": NOISE,
     "output": "NNNN",
     "adios_config": "adios2.xml",
     "adios_span" : false,

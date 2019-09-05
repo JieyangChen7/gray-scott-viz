@@ -3,7 +3,22 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+#include <cmath>
 #include "zc.h"
+
+double L_infinity_error(int m, int n, int k, double * org, double * dec) {
+  double norm0 = 0.0;
+  double norm  = 0.0;
+  for (int i = 0; i < m * n * k; i++) {
+    if (norm0 < org[i]) norm0 = org[i];
+    double abs_diff = fabs(org[i] - dec[i]);
+    if (norm < abs_diff) norm = abs_diff;
+  }
+  return norm/norm0;
+
+
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -70,58 +85,51 @@ int main(int argc, char *argv[]) {
 //  ZC_DataProperty * dec_dataProperty;
   int iter = 0;
   while (true) {
-      adios2::StepStatus status1 = org_reader.BeginStep(); 
-      adios2::StepStatus status2 = dec_reader.BeginStep();
-      //status = reader.BeginStep(); 
-      if (status1 != adios2::StepStatus::OK || status2 != adios2::StepStatus::OK) {
-          break;
-      }
-      //std::cout << "iter = " << iter << std::endl;
+    adios2::StepStatus status1 = org_reader.BeginStep(); 
+    adios2::StepStatus status2 = dec_reader.BeginStep();
+    //status = reader.BeginStep(); 
+    if (status1 != adios2::StepStatus::OK || status2 != adios2::StepStatus::OK) {
+        break;
+    }
+    //std::cout << "iter = " << iter << std::endl;
 
-      
-      
-      std::vector<int> org_inStep;
-      org_reader.Get(org_inVarStep, org_inStep, adios2::Mode::Sync);
+    
+    
+    std::vector<int> org_inStep;
+    org_reader.Get(org_inVarStep, org_inStep, adios2::Mode::Sync);
       
 
-      if (compressU > -1) {
-	std::vector<double> org_u;
-        std::vector<double> dec_u;
-        org_reader.Get(org_inVarU, org_u, adios2::Mode::Sync);
-      	dec_reader.Get(dec_inVarU, dec_u, adios2::Mode::Sync);
-      	char varName[] = "U";
-	ZC_Init(cfgFile);
-	ZC_CompareData* compareResult = ZC_compareData(varName, ZC_DOUBLE, org_u.data(), dec_u.data(),
-		       	1, 1, org_shapeU[0], org_shapeU[1], org_shapeU[2]);
-	std::cout<< org_inStep[0] << "," <<compareResult->psnr << std::endl;
-        freeDataProperty(compareResult->property);
-	freeCompareResult(compareResult);		
-      }
-      if (compressV > -1) {
-	std::vector<double> org_v;
-        std::vector<double> dec_v;
-        ZC_Init(cfgFile);	
-        org_reader.Get(org_inVarV, org_v, adios2::Mode::Sync);
-	dec_reader.Get(dec_inVarV, dec_v, adios2::Mode::Sync);
-	char varName[] = "V";
-	ZC_CompareData* compareResult = ZC_compareData(varName, ZC_DOUBLE, org_v.data(), dec_v.data(),
-                        1, 1, org_shapeV[0], org_shapeV[1], org_shapeV[2]);
-        std::cout<< org_inStep[0] <<"," << compareResult->psnr << std::endl;
-        double min = 10000000;
-	double max = 0;
-	for (int i = 0; i < org_shapeV[0]*org_shapeV[1]*org_shapeV[2]; i++) {
-		double d = abs(org_v[i]-dec_v[i]);
-		if (d > max) max=d;
-		if (d < min) min=d;
-	}
-	//std::cout << "max = " << max << ", min = " << min << std::endl;
-	freeDataProperty(compareResult->property);
-	freeCompareResult(compareResult);
-      }
-      iter++;
-      org_reader.EndStep();
-      dec_reader.EndStep();
-
+    if (compressU > -1) {
+      std::vector<double> org_u;
+      std::vector<double> dec_u;
+      org_reader.Get(org_inVarU, org_u, adios2::Mode::Sync);
+      dec_reader.Get(dec_inVarU, dec_u, adios2::Mode::Sync);
+      char varName[] = "U";
+      ZC_Init(cfgFile);
+      ZC_CompareData* compareResult = ZC_compareData(varName, ZC_DOUBLE, org_u.data(), dec_u.data(),
+                1, 1, org_shapeU[0], org_shapeU[1], org_shapeU[2]);
+      double l_inf_error = L_infinity_error(org_shapeV[0], org_shapeV[1], org_shapeV[2], org_u.data(), dec_u.data());
+      std::cout<< org_inStep[0] <<"," << compareResult->psnr << "," << l_inf_error <<std::endl;
+      freeDataProperty(compareResult->property);
+      freeCompareResult(compareResult);   
+    }
+    if (compressV > -1) {
+      std::vector<double> org_v;
+      std::vector<double> dec_v;
+      ZC_Init(cfgFile); 
+      org_reader.Get(org_inVarV, org_v, adios2::Mode::Sync);
+      dec_reader.Get(dec_inVarV, dec_v, adios2::Mode::Sync);
+      char varName[] = "V";
+      ZC_CompareData* compareResult = ZC_compareData(varName, ZC_DOUBLE, org_v.data(), dec_v.data(),
+                            1, 1, org_shapeV[0], org_shapeV[1], org_shapeV[2]);
+      double l_inf_error = L_infinity_error(org_shapeV[0], org_shapeV[1], org_shapeV[2], org_v.data(), dec_v.data());
+      std::cout<< org_inStep[0] <<"," << compareResult->psnr << "," << l_inf_error <<std::endl;
+      freeDataProperty(compareResult->property);
+      freeCompareResult(compareResult);
+    }
+    iter++;
+    org_reader.EndStep();
+    dec_reader.EndStep();
   }
   return 0;
 }

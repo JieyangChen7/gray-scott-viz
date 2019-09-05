@@ -1,0 +1,23 @@
+[oakridgepc:07135] *** Process received signal ***
+[oakridgepc:07135] Signal: Aborted (6)
+[oakridgepc:07135] Signal code:  (-6)
+[oakridgepc:07135] [ 0] /lib/x86_64-linux-gnu/libc.so.6(+0x3ef20)[0x7faf5aea3f20]
+[oakridgepc:07135] [ 1] /lib/x86_64-linux-gnu/libc.so.6(gsignal+0xc7)[0x7faf5aea3e97]
+[oakridgepc:07135] [ 2] /lib/x86_64-linux-gnu/libc.so.6(abort+0x141)[0x7faf5aea5801]
+[oakridgepc:07135] [ 3] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x8c957)[0x7faf5b4fa957]
+[oakridgepc:07135] [ 4] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92ab6)[0x7faf5b500ab6]
+[oakridgepc:07135] [ 5] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92af1)[0x7faf5b500af1]
+[oakridgepc:07135] [ 6] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92d24)[0x7faf5b500d24]
+[oakridgepc:07135] [ 7] /home/4yc/opt/adios/lib/libadios2.so.2(_ZNK6adios29transport9FilePOSIX9CheckFileENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE+0xce)[0x7faf5c146bbe]
+[oakridgepc:07135] [ 8] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios29transport9FilePOSIX4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeE+0x2d2)[0x7faf5c146ee2]
+[oakridgepc:07135] [ 9] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios212transportman12TransportMan17OpenFileTransportERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeERKSt3mapIS7_S7_St4lessIS7_ESaISt4pairIS8_S7_EEEb+0x2aa)[0x7faf5c13ee5a]
+[oakridgepc:07135] [10] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios212transportman12TransportMan9OpenFilesERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EENS_4ModeERKS2_ISt3mapIS8_S8_St4lessIS8_ESaISt4pairIKS8_S8_EEESaISL_EEb+0x231)[0x7faf5c140301]
+[oakridgepc:07135] [11] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3Reader14InitTransportsEv+0x51f)[0x7faf5bf35eff]
+[oakridgepc:07135] [12] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3Reader4InitEv+0x34)[0x7faf5bf36234]
+[oakridgepc:07135] [13] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3ReaderC1ERNS0_2IOERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeEP19ompi_communicator_t+0xff)[0x7faf5bf3657f]
+[oakridgepc:07135] [14] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core2IO4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeEP19ompi_communicator_t+0x322)[0x7faf5beab1a2]
+[oakridgepc:07135] [15] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios22IO4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeE+0x141)[0x7faf5c1f8481]
+[oakridgepc:07135] [16] /home/4yc/dev/gray-scott-viz/scripts/compressor_profiler/build/profile_zc(main+0x1d4)[0x55ea71608ae4]
+[oakridgepc:07135] [17] /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7)[0x7faf5ae86b97]
+[oakridgepc:07135] [18] /home/4yc/dev/gray-scott-viz/scripts/compressor_profiler/build/profile_zc(_start+0x2a)[0x55ea7160878a]
+[oakridgepc:07135] *** End of error message ***

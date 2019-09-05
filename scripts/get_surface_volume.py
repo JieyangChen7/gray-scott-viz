@@ -45,19 +45,29 @@ if (mode == "volume"):
 
 print "Active time slider: %s" % GetActiveTimeSlider()
 i = 0
+v = 0.0
+n = 0
 for states in range(TimeSliderGetNStates()):
     SetTimeSliderState(states)
     if (i >= ts_start and i < ts_end):
-    	DrawPlots()
-    	if (mode == "surface"):
-        	Query("3D surface area")
-    	if (mode == "volume_simple"):
-        	Query("Volume")
-    	v = GetQueryOutputValue()
-        if v == ():
-            v = 0.0
-    	writer.writerow([i, v])
-    	f.flush()
+        DrawPlots()
+        if (mode == "surface"):
+            Query("3D surface area")
+            v = GetQueryOutputValue()
+            if v == ():
+                v = 0.0
+            Query("Number of Connected Components")
+            n = GetQueryOutputValue()
+            if n == ():
+                n = 0
+            writer.writerow([i, v, n])
+        if (mode == "volume_simple"):
+            Query("Volume")
+            v = GetQueryOutputValue()
+            if v == ():
+                v = 0.0
+                        
+        f.flush()
     i += 1 
 f.close()
 
