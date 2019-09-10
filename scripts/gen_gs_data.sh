@@ -12,7 +12,7 @@ ZC_PROFILER=$PROFILER_PREFIX/build/profile_zc
 
 
 ZC_CONFIG=$PROFILER_PREFIX/zc.config
-GS_NPROC=16
+GS_NPROC=20
 VTKH_NPROC=1
 COMPRESS_NPROC=1
 DECOMPRESS_NPROC=1
@@ -185,6 +185,25 @@ decompress_gs_data() {
         cd ..
 }
 
+# delete data
+delete_data() {
+    _SIZE=$1
+    _NOISE=$2
+    _COMPRESSOR_U=$3
+    _TOL_U=$4
+    _COMPRESSOR_V=$5
+    _TOL_V=$6
+
+    _BPNAME=compressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+    _OUTPUT=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+
+    cd gs_data
+    rm ${_BPNAME}.bp
+    rm -rf ${_BPNAME}.bp.dir
+    rm ${_OUTPUT}.bp
+    rm -rf ${_OUTPUT}.bp.dir
+    cd ..
+}
 
 # Analyze and compare orginal and decompressed data via Z-Checker
 analyze_gs_data() {
@@ -301,7 +320,7 @@ measure_perf() {
     _START_ITER=$7
     _END_ITER=$8
     _GAP=$9
-    _ISO_VALUE=$10
+    _ISO_VALUE=${10}
    
     if (( ${_COMPRESSOR_U}>0 || ${_COMPRESSOR_V}>0 ))
     then
@@ -317,7 +336,7 @@ measure_perf() {
     
     echo 'Running on serial'
     [ -f ${_BPNAME}_serial_iso_${_ISO_VALUE}.csv ] && rm ${_BPNAME}_serial_iso_${_ISO_VALUE}.csv
-    mpirun -np ${VTKH_NPROC} ${VTKH_RENDER} ../gs_data/${_BPNAME}.bp ../gs_data/adios2.xml ${_SIZE} ${_SIZE} 1 ${_BPNAME}_img_serial_iso_${_ISO_VALUE} ${_START_ITER} ${_END_ITER} ${_COMPRESSOR_U} ${_COMPRESSOR_V} >> ${_BPNAME}_serial_iso_${_ISO_VALUE}.csv
+    mpirun -np ${VTKH_NPROC} ${VTKH_RENDER} ../gs_data/${_BPNAME}.bp ../gs_data/adios2.xml ${_SIZE} ${_SIZE} 1 ${_BPNAME}_img_serial_iso_${_ISO_VALUE} ${_START_ITER} ${_END_ITER} ${_COMPRESSOR_U} ${_COMPRESSOR_V} ${_GAP} ${_ISO_VALUE} >> ${_BPNAME}_serial_iso_${_ISO_VALUE}.csv
 
     echo 'Running on cuda'
     [ -f ${_BPNAME}_cuda_iso_${_ISO_VALUE}.csv ] && rm ${_BPNAME}_cuda_iso_${_ISO_VALUE}.csv
@@ -325,7 +344,7 @@ measure_perf() {
 
     echo 'Running on openmp'
     [ -f ${_BPNAME}_openmp_iso_${_ISO_VALUE}.csv ] && rm ${_BPNAME}_openmp_iso_${_ISO_VALUE}.csv
-    mpirun -np ${VTKH_NPROC} ${VTKH_RENDER} ../gs_data/${_BPNAME}.bp ../gs_data/adios2.xml ${_SIZE} ${_SIZE} 3 ${_BPNAME}_img_openmp_iso_${_ISO_VALUE} ${_START_ITER} ${_END_ITER} ${_COMPRESSOR_U} ${_COMPRESSOR_V} >> ${_BPNAME}_openmp_iso_${_ISO_VALUE}.csv
+    mpirun -np ${VTKH_NPROC} ${VTKH_RENDER} ../gs_data/${_BPNAME}.bp ../gs_data/adios2.xml ${_SIZE} ${_SIZE} 3 ${_BPNAME}_img_openmp_iso_${_ISO_VALUE} ${_START_ITER} ${_END_ITER} ${_COMPRESSOR_U} ${_COMPRESSOR_V} ${_GAP} ${_ISO_VALUE} >> ${_BPNAME}_openmp_iso_${_ISO_VALUE}.csv
 
     cd ..
 }
@@ -333,34 +352,36 @@ measure_perf() {
 
 STORE_U=-1
 STORE_V=0
-SIZE=64
+SIZE=256
 NOISE=0.0
-
+STEP=3000
+GAP=300
+ITER=10
 
 
 #echo 'generating Gray-scott simulation data'
-#gen_gs_data ${SIZE} ${NOISE} 3000 10 
+#gen_gs_data ${SIZE} ${NOISE} ${STEP} ${GAP} 
 
-#echo 'processing data'
-#process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+echo 'processing data'
+process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
 
-#echo 'profile read/write without compression'
-#profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+echo 'profile read/write without compression'
+profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
 
 
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 300 0.1
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 300 0.2
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 300 0.3
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 300 0.4
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 300 0.5
+measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.1
+# measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.2
+# measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.3
+# measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.4
+# measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.5
 
 
 echo 'measuring performance without compression'
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 3000 10 0.1
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 3000 10 0.2
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 3000 10 0.3
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 3000 10 0.4
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 3000 10 0.5
+measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.1
+# measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.2
+# measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.3
+# measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.4
+# measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.5
 
 
 #echo 'profile read write without compression for SST'
@@ -381,32 +402,33 @@ do
     do
         DUMMY=123
         SST=0
-        #echo 'compressing with tolerance = ' $TOL_V
-        #compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        echo 'compressing with tolerance = ' $TOL_V
+        compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        #echo 'decompressing on data with lossy tolerance = ' $TOL_V
-        #decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        echo 'decompressing on data with lossy tolerance = ' $TOL_V
+        decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        #echo 'analyzing data'
-        #analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+        echo 'analyzing data'
+        analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
 
         echo 'performance test on data with lossy tolerance =' $TOL_V
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 3000 10 0.1
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 3000 10 0.2
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 3000 10 0.3
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 3000 10 0.4
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 3000 10 0.5
+        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.1
+#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.2
+#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.3
+#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.4
+#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.5
 
         echo 'measuring surface area'
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300 0.1
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300 0.2
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300 0.3
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300 0.4
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 300 0.5
+        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.1
+#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.2
+#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.3
+#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.4
+#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.5
         
-        #SST=1
-        #compress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE1 &
-        #sleep 10
-        #decompress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE2
+        # #SST=1
+        # #compress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE1 &
+        # #sleep 10
+        # #decompress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE2
+        # delete_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
     done
 done

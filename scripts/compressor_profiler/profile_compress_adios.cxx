@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
   if (compressV == 1) { // MGARD
     adios2::Operator szOp =
             adios.DefineOperator("mgardCompressor_v", adios2::ops::LossyMGARD);
-            varV.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::to_string(toleranceV)}});
+            varV.AddOperation(szOp, {{adios2::ops::mgard::key::accuracy, std::to_string(toleranceV)}});
   } else if (compressV == 2) { // SZ-ABS
     adios2::Operator szOp =
             adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);

@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <iostream>
+#include <fstream>
 
 int main(int argc, char *argv[]) {
 
@@ -109,7 +110,12 @@ int main(int argc, char *argv[]) {
         stop = std::chrono::high_resolution_clock::now();
         write_io_time = std::chrono::duration<double>(stop-start).count();
         std::cout << inStep[0] << "," << read_io_time << "," << write_io_time << std::endl;
+        if (iter == 0) {
+	  std::ofstream myFile ("data.bin", std::ios::out | std::ios::binary);
+          myFile.write ((char*)v.data(), shapeV[0]*shapeV[1]*shapeV[2]*sizeof(double));
+	}
       }
+	
       iter++;
       writer.EndStep();
 

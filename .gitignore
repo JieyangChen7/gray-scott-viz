@@ -12,6 +12,7 @@ vtkm/build/*
 scripts/gs_data/compressed*
 scripts/gs_data/decompressed*
 scripts/gs_data/nocompressed*
+scripts/gs_data/profile_nocompressed*
 scripts/gs_data/gs*
 scripts/gs_data/*.xml
 scripts/gs_data/*.log

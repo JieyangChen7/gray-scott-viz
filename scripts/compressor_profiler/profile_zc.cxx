@@ -6,17 +6,15 @@
 #include <cmath>
 #include "zc.h"
 
-double L_infinity_error(int m, int n, int k, double * org, double * dec) {
+double L_infinity_error(int d1, int d2, int d3, double * org, double * dec) {
   double norm0 = 0.0;
   double norm  = 0.0;
-  for (int i = 0; i < m * n * k; i++) {
-    if (norm0 < org[i]) norm0 = org[i];
+  for (int i = 0; i < d1*d2*d3; i++) { 
+    if (norm0 < fabs(org[i])) norm0 = fabs(org[i]);
     double abs_diff = fabs(org[i] - dec[i]);
     if (norm < abs_diff) norm = abs_diff;
   }
   return norm/norm0;
-
-
 }
 
 
