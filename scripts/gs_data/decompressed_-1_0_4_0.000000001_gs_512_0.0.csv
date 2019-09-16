@@ -1,0 +1,26 @@
+[oakridgepc:03326] *** Process received signal ***
+[oakridgepc:03326] Signal: Aborted (6)
+[oakridgepc:03326] Signal code:  (-6)
+[oakridgepc:03326] [ 0] /lib/x86_64-linux-gnu/libc.so.6(+0x3ef20)[0x7f8e0627ef20]
+[oakridgepc:03326] [ 1] /lib/x86_64-linux-gnu/libc.so.6(gsignal+0xc7)[0x7f8e0627ee97]
+[oakridgepc:03326] [ 2] /lib/x86_64-linux-gnu/libc.so.6(abort+0x141)[0x7f8e06280801]
+[oakridgepc:03326] [ 3] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x8c957)[0x7f8e068d5957]
+[oakridgepc:03326] [ 4] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92ab6)[0x7f8e068dbab6]
+[oakridgepc:03326] [ 5] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92af1)[0x7f8e068dbaf1]
+[oakridgepc:03326] [ 6] /usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0x92d24)[0x7f8e068dbd24]
+[oakridgepc:03326] [ 7] /home/4yc/opt/adios/lib/libadios2.so.2(_ZNK6adios29transport9FilePOSIX9CheckFileENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE+0xce)[0x7f8e072f2bde]
+[oakridgepc:03326] [ 8] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios29transport9FilePOSIX4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeE+0x2d2)[0x7f8e072f2f02]
+[oakridgepc:03326] [ 9] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios212transportman12TransportMan17OpenFileTransportERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeERKSt3mapIS7_S7_St4lessIS7_ESaISt4pairIS8_S7_EEEb+0x2aa)[0x7f8e072eae7a]
+[oakridgepc:03326] [10] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios212transportman12TransportMan9OpenFilesERKSt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaIS8_EENS_4ModeERKS2_ISt3mapIS8_S8_St4lessIS8_ESaISt4pairIKS8_S8_EEESaISL_EEb+0x231)[0x7f8e072ec321]
+[oakridgepc:03326] [11] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3Reader14InitTransportsEv+0x51f)[0x7f8e070e1f1f]
+[oakridgepc:03326] [12] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3Reader4InitEv+0x34)[0x7f8e070e2254]
+[oakridgepc:03326] [13] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core6engine9BP3ReaderC1ERNS0_2IOERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeEP19ompi_communicator_t+0xff)[0x7f8e070e259f]
+[oakridgepc:03326] [14] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios24core2IO4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeEP19ompi_communicator_t+0x322)[0x7f8e070571c2]
+[oakridgepc:03326] [15] /home/4yc/opt/adios/lib/libadios2.so.2(_ZN6adios22IO4OpenERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_4ModeE+0x141)[0x7f8e073a44a1]
+[oakridgepc:03326] [16] /home/4yc/dev/gray-scott-viz/scripts/compressor_profiler/build/profile_decompress_adios(main+0x253)[0x55a0a7ae6b33]
+[oakridgepc:03326] [17] /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7)[0x7f8e06261b97]
+[oakridgepc:03326] [18] /home/4yc/dev/gray-scott-viz/scripts/compressor_profiler/build/profile_decompress_adios(_start+0x2a)[0x55a0a7ae675a]
+[oakridgepc:03326] *** End of error message ***
+--------------------------------------------------------------------------
+mpirun noticed that process rank 0 with PID 0 on node oakridgepc exited on signal 6 (Aborted).
+--------------------------------------------------------------------------
