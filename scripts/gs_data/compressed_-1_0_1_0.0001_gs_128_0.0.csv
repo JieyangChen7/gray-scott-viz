@@ -1,50 +1,10 @@
-0,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 18979
-compress_memory_blosc done: 1244 milliseconds
-
-1.73822,883.988,1.75451
-300,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 79802
-compress_memory_blosc done: 1416 milliseconds
-
-1.74684,210.236,1.75277
-600,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 170426
-compress_memory_blosc done: 1645 milliseconds
-
-1.92011,98.4428,1.92583
-900,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 302315
-compress_memory_blosc done: 2652 milliseconds
-
-2.93949,55.4958,2.9452
-1200,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 497407
-compress_memory_blosc done: 2622 milliseconds
-
-3.09579,33.7294,3.10334
-1500,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 740114
-compress_memory_blosc done: 2419 milliseconds
-
-2.72853,22.6684,2.73609
-1800,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 1087997
-compress_memory_blosc done: 3074 milliseconds
-
-3.38925,15.4203,3.39522
-2100,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 1515383
-compress_memory_blosc done: 3772 milliseconds
-
-4.22527,11.0713,4.2337
-2400,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 2021039
-compress_memory_blosc done: 4421 milliseconds
-
-4.69183,8.30128,4.6984
-2700,compress_memory_blosc: 8388616
-compressor = zstd ;csize = 2564832
-compress_memory_blosc done: 3413 milliseconds
-
-3.79796,6.54125,3.80654
+0,2.21771,883.988,2.23443
+300,3.00579,210.236,3.01341
+600,3.28862,98.4428,3.29621
+900,4.18657,55.4958,4.19412
+1200,4.09242,33.7294,4.10011
+1500,4.59869,22.6684,4.60778
+1800,5.09235,15.4203,5.10014
+2100,3.87225,11.0713,3.88057
+2400,3.44042,8.30128,3.44669
+2700,3.44395,6.54125,3.45032

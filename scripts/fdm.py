@@ -6,17 +6,17 @@ import sys
 import csv
 
 #print(len(sys.argv))
-bp_file       = sys.argv[1]
-output_csv    = sys.argv[2]
-store_U       = int(sys.argv[3])
-store_V       = int(sys.argv[4])
-deriv_axis    = int(sys.argv[5])
+bp_file        = sys.argv[1]
+output_csv     = sys.argv[2]
+store_U        = int(sys.argv[3])
+store_V        = int(sys.argv[4])
+deriv_axis     = int(sys.argv[5])
 order_of_deriv = int(sys.argv[6])
-accuracy      = int(sys.argv[7])
-store_deriv   = int(sys.argv[8])
-store_lap   = int(sys.argv[9])
-start_iter    = int(sys.argv[10])
-end_iter      = int(sys.argv[11])
+accuracy       = int(sys.argv[7])
+store_deriv    = int(sys.argv[8])
+store_lap      = int(sys.argv[9])
+start_iter     = int(sys.argv[10])
+end_iter       = int(sys.argv[11])
 
 f = open(output_csv, 'w+')
 writer = csv.writer(f)
@@ -60,7 +60,7 @@ for fstep in fh:
 
         if (store_V > -1):
             data = fstep.read("V")
-            #print(data)
+            #print("Min: " + str(data.min()) + ", Max: " + str(data.max()))
             dx = 1
             op = FinDiff(deriv_axis, dx, order_of_deriv, acc = accuracy)
             result = op(data)

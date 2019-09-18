@@ -77,6 +77,17 @@ void GrayScott::init_field()
             }
         }
     }
+
+    for (int x = 1; x < size_x+1; x++) {
+        for (int y = 1; y < size_y+1; y++) {
+            for (int z = 1; z < size_z+1; z++) {
+                const int i = l2i(x, y, z);
+                u[i] += settings.noise * uniform_dist(mt_gen);
+                v[i] += settings.noise * uniform_dist(mt_gen);
+            }
+        }
+    }
+
 }
 
 double GrayScott::calcU(double tu, double tv) const
@@ -117,7 +128,7 @@ void GrayScott::calc(const std::vector<double> &u, const std::vector<double> &v,
                 dv = settings.Dv * laplacian(x, y, z, v);
                 du += calcU(u[i], v[i]);
                 dv += calcV(u[i], v[i]);
-                du += settings.noise * uniform_dist(mt_gen);
+                //du += settings.noise * uniform_dist(mt_gen);
                 u2[i] = u[i] + du * settings.dt;
                 v2[i] = v[i] + dv * settings.dt;
             }

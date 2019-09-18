@@ -186,7 +186,7 @@ decompress_gs_data() {
 }
 
 # delete data
-delete_data() {
+delete_compressed_data() {
     _SIZE=$1
     _NOISE=$2
     _COMPRESSOR_U=$3
@@ -200,6 +200,21 @@ delete_data() {
     cd gs_data
     rm ${_BPNAME}.bp
     rm -rf ${_BPNAME}.bp.dir
+    cd ..
+}
+
+delete_decompressed_data() {
+    _SIZE=$1
+    _NOISE=$2
+    _COMPRESSOR_U=$3
+    _TOL_U=$4
+    _COMPRESSOR_V=$5
+    _TOL_V=$6
+
+    _BPNAME=compressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+    _OUTPUT=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+
+    cd gs_data
     rm ${_OUTPUT}.bp
     rm -rf ${_OUTPUT}.bp.dir
     cd ..
@@ -349,10 +364,72 @@ measure_perf() {
     cd ..
 }
 
+get_deriv(){
+    _SIZE=$1
+    _NOISE=$2
+    _COMPRESSOR_U=$3
+    _TOL_U=$4
+    _COMPRESSOR_V=$5
+    _TOL_V=$6
+    _DERIV_AXIS=$7
+    _ORDER_OF_DERIV=$8
+    _ACCURACY=$9
+    _STORE_DERIV=${10}
+    _STORE_LAP=${11}
+    _START_ITER=${12}
+    _END_ITER=${13}
+
+    if (( ${_COMPRESSOR_U}>0 || ${_COMPRESSOR_V}>0 ))
+    then
+        echo 'decompressed version'
+        _BPNAME=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+    else
+        echo 'original version'
+        _BPNAME=nocompressed_${_COMPRESSOR_U}_0_${_COMPRESSOR_V}_0_gs_${_SIZE}_${_NOISE}
+    fi
+
+
+    #[ ! -d "./deriv_results" ]  && mkdir deriv_results
+    _OUTPUT=deriv_${_DERIV_AXIS}_${_ORDER_OF_DERIV}_${_ACCURACY}_${_BPNAME}.csv
+    cd ./gs_data
+    [ -f ${_OUTPUT} ] && rm ${_OUTPUT}
+    ../fdm.py ${_BPNAME}.bp ${_OUTPUT} ${_COMPRESSOR_U} ${_COMPRESSOR_V} ${_DERIV_AXIS} ${_ORDER_OF_DERIV} ${_ACCURACY} ${_STORE_DERIV} ${_STORE_LAP} ${_START_ITER} ${_END_ITER}
+    cd ..
+}
+
+
+get_entropy(){
+    _SIZE=$1
+    _NOISE=$2
+    _COMPRESSOR_U=$3
+    _TOL_U=$4
+    _COMPRESSOR_V=$5
+    _TOL_V=$6
+    _NUM_OF_BINS=$7
+    _START_ITER=$8
+    _END_ITER=$9
+
+    if (( ${_COMPRESSOR_U}>0 || ${_COMPRESSOR_V}>0 ))
+    then
+        echo 'decompressed version'
+        _BPNAME=decompressed_${_COMPRESSOR_U}_${_TOL_U}_${_COMPRESSOR_V}_${_TOL_V}_gs_${_SIZE}_${_NOISE}
+    else
+        echo 'original version'
+        _BPNAME=nocompressed_${_COMPRESSOR_U}_0_${_COMPRESSOR_V}_0_gs_${_SIZE}_${_NOISE}
+    fi
+
+
+    #[ ! -d "./deriv_results" ]  && mkdir deriv_results
+    _OUTPUT=entropy_${_NUM_OF_BINS}_${_BPNAME}.csv
+    cd ./gs_data
+    [ -f ${_OUTPUT} ] && rm ${_OUTPUT}
+    ../entropy.py ${_BPNAME}.bp ${_OUTPUT} ${_COMPRESSOR_U} ${_COMPRESSOR_V} ${_NUM_OF_BINS} ${_START_ITER} ${_END_ITER}
+    cd ..
+}
 
 STORE_U=-1
 STORE_V=0
-SIZE=256
+SIZE=512
 NOISE=0.0
 STEP=3000
 GAP=300
@@ -362,27 +439,29 @@ ITER=10
 #echo 'generating Gray-scott simulation data'
 #gen_gs_data ${SIZE} ${NOISE} ${STEP} ${GAP} 
 
-echo 'processing data'
-process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+#echo 'processing data'
+#process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
 
-echo 'profile read/write without compression'
-profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+#echo 'profile read/write without compression'
+#profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
 
 
-measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.1
+#measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.1
 # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.2
 # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.3
 # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.4
 # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.5
 
 
-echo 'measuring performance without compression'
-measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.1
+#echo 'measuring performance without compression'
+#measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.1
 # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.2
 # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.3
 # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.4
 # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.5
 
+#get_deriv ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 4 4 0 0 0 10
+get_entropy ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 1000000 0 ${ITER}
 
 #echo 'profile read write without compression for SST'
 #SST=1
@@ -398,37 +477,44 @@ for COMPRESSOR in 1 2 3 4 5 # 1=MAGRD; 2=SZ-ABS; 3=SZ-REL; 4=SZ=PWL; 5=ZFP
 do
     echo 'using compressor #' $COMPRESSOR
 
-    for TOL_V in 0.000001 0.00001 0.0001 0.001 0.01 0.1
+    for TOL_V in 0.00000001 0.0000001 0.000001 0.00001 0.0001 0.001 0.01 0.1 1 10
     do
         DUMMY=123
         SST=0
-        echo 'compressing with tolerance = ' $TOL_V
-        compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        #echo 'compressing with tolerance = ' $TOL_V
+        #compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        echo 'decompressing on data with lossy tolerance = ' $TOL_V
-        decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        #echo 'decompressing on data with lossy tolerance = ' $TOL_V
+        #decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        echo 'analyzing data'
-        analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+        #echo 'analyzing data'
+        #analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
 
-        echo 'performance test on data with lossy tolerance =' $TOL_V
-        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.1
-#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.2
-#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.3
-#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.4
-#        measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.5
+        #echo 'performance test on data with lossy tolerance =' $TOL_V
+        #measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.1
+       # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.2
+       # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.3
+       # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.4
+       # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.5
 
-        echo 'measuring surface area'
-        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.1
-#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.2
-#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.3
-#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.4
-#        measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.5
-        
+       #echo 'measuring surface area'
+       #measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.1
+       # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.2
+       # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.3
+       # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.4
+       # measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${ITER} 0.5
+	
+       #echo 'calculating derivative'
+       #get_deriv ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 4 4 0 0 0 ${STEP}
+
+ 	#echo 'calculating entropy'
+	#get_entropy ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 1000000 0 ${ITER}
+
         # #SST=1
         # #compress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE1 &
         # #sleep 10
         # #decompress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST $DIR $NODE2
-        # delete_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+        #delete_compressed_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+        #delete_decompressed_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
     done
 done
