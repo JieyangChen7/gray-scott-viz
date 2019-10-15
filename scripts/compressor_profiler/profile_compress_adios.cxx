@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("SimulationOutput");
+  inIO.SetEngine("BP4");
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
 
 
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
 
   adios2::Variable<double> inVarU, inVarV;
   const adios2::Variable<int> inVarStep = inIO.InquireVariable<int>("step");
+
   adios2::Dims shapeU, shapeV;
 
   if (compressU > -1) {
@@ -51,6 +53,7 @@ int main(int argc, char *argv[]) {
   }
 
   adios2::IO outIO = adios.DeclareIO("CompressedSimulationOutput");
+  outIO.SetEngine("BP4");
   if (useSST == 1) {
       outIO.SetEngine("SST");
       outIO.SetParameters({

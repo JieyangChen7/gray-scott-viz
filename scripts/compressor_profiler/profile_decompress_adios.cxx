@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("CompressedSimulationOutput");
+  inIO.SetEngine("BP4");
   if (useSST == 1) {
       inIO.SetEngine("SST");
   }
@@ -40,6 +41,7 @@ int main(int argc, char *argv[]) {
   adios2::Dims shapeV;
   
   adios2::IO outIO = adios.DeclareIO("DecompressedSimulationOutput");
+  outIO.SetEngine("BP4");
   adios2::Engine writer = outIO.Open(output_bp_filename, adios2::Mode::Write);
 
   adios2::Variable<double> varU;

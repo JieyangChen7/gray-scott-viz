@@ -22,6 +22,7 @@ void GrayScott::init()
     init_field();
 }
 
+
 void GrayScott::iterate()
 {
     exchange(u, v);
@@ -65,8 +66,20 @@ void GrayScott::init_field()
     v.resize(V, 0.0);
     u2.resize(V, 0.0);
     v2.resize(V, 0.0);
-
-    const int d = 6;
+   
+    for (int x = 0; x < settings.L; x++) { 
+	    for (int y = 0; y < settings.L; y++) { 
+	        for (int z = 0; z < settings.L; z++) { 
+    		    if (!is_inside(x, y, z)) continue;
+		        int i = g2i(x, y, z);
+		        u[i] -= settings.noise * uniform_dist(mt_gen);
+                //v[i] += settings.noise * uniform_dist(mt_gen);
+	        }
+        }
+    }
+    
+   
+    int d = 6;
     for (int x = settings.L / 2 - d; x < settings.L / 2 + d; x++) {
         for (int y = settings.L / 2 - d; y < settings.L / 2 + d; y++) {
             for (int z = settings.L / 2 - d; z < settings.L / 2 + d; z++) {
@@ -78,17 +91,50 @@ void GrayScott::init_field()
         }
     }
 
-    for (int x = 1; x < size_x+1; x++) {
-        for (int y = 1; y < size_y+1; y++) {
-            for (int z = 1; z < size_z+1; z++) {
-                const int i = l2i(x, y, z);
-                u[i] += settings.noise * uniform_dist(mt_gen);
-                v[i] += settings.noise * uniform_dist(mt_gen);
+    for (int x = settings.L / 4 - d; x < settings.L / 4 + d; x++) {
+        for (int y = settings.L / 4 - d; y < settings.L / 4 + d; y++) {
+            for (int z = settings.L / 4 - d; z < settings.L / 4 + d; z++) {
+                if (!is_inside(x, y, z)) continue;
+                int i = g2i(x, y, z);
+                u[i] = settings.noise * uniform_dist(mt_gen);
+                v[i] = settings.noise * uniform_dist(mt_gen);
             }
         }
     }
 
+    for (int x = settings.L * 3 / 4 - d; x < settings.L * 3/ 4 + d; x++) {
+        for (int y = settings.L * 3 / 4 - d; y < settings.L * 3/ 4 + d; y++) {
+            for (int z = settings.L * 3 / 4 - d; z < settings.L * 3/ 4 + d; z++) {
+                if (!is_inside(x, y, z)) continue;
+                int i = g2i(x, y, z);
+                u[i] = settings.noise * uniform_dist(mt_gen);
+                v[i] = settings.noise * uniform_dist(mt_gen);
+            }
+        }
+    }
 }
+
+void GrayScott::restore_field(std::vector<double> old_u, std::vector<double> old_v) {
+    // const int V = (size_x + 2) * (size_y + 2) * (size_z + 2);
+    // u.resize(V, 1.0);
+    // v.resize(V, 0.0);
+    // u2.resize(V, 0.0);
+    // v2.resize(V, 0.0);
+
+    //u = std::vector<double>(old_u);
+    //v = std::vector<double>(old_v);
+
+    for (int x = 1; x < size_x + 1; x++) {
+        for (int y = 1; y < size_y + 1; y++) {
+            for (int z = 1; z < size_z + 1; z++) {
+                u[l2i(x, y, z)] = old_u[(x - 1) + (y - 1) * size_x + (z - 1) * size_x * size_y];
+                v[l2i(x, y, z)] = old_v[(x - 1) + (y - 1) * size_x + (z - 1) * size_x * size_y];
+            }
+        }
+    }
+}
+
+
 
 double GrayScott::calcU(double tu, double tv) const
 {

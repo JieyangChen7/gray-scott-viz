@@ -32,7 +32,7 @@ void define_bpvtk_attribute(const Settings &s, adios2::IO& io)
           </ImageData>
         </VTKFile>)";
 
-        io.DefineAttribute<std::string>("vtk.xml", imageData);
+        //io.DefineAttribute<std::string>("vtk.xml", imageData);
     };
 
     if(s.mesh_type == "image")
@@ -112,13 +112,79 @@ int main(int argc, char **argv)
     Settings settings = Settings::from_json(argv[1]);
 
     GrayScott sim(settings, comm);
-
     sim.init();
+    adios2::Mode mode;
+    int start_iter;
+    bool restore_mode = false;
+
+    // start from beginning
+    if (argc == 2) {
+        if (rank == 0) {
+            std::cout << "Start from beginning" << std::endl;
+        }
+        mode = adios2::Mode::Write;
+        start_iter = 0;
+    }
+
+    // restore mode
+    if (argc == 4 && argv[2][0] == 'r') {
+        if (rank == 0) {
+            std::cout << "Restore mode" << std::endl;
+        }
+        restore_mode = true;
+        int end_iter = atoi(argv[3]);
+        start_iter = end_iter;
+        mode = adios2::Mode::Append;
+        adios2::ADIOS adios(settings.adios_config, comm, adios2::DebugON);
+        adios2::IO io = adios.DeclareIO("SimulationOutput");
+        io.SetEngine("BP4");
+        adios2::Engine reader = io.Open(settings.output, adios2::Mode::Read);
+
+        adios2::Box<adios2::Dims> sel({sim.offset_z, sim.offset_y, sim.offset_x}, 
+                                      {sim.size_z, sim.size_y, sim.size_x});
+
+        adios2::Variable<double> varU = io.InquireVariable<double>("U");
+        varU.SetSelection(sel);
+
+        adios2::Variable<double> varV = io.InquireVariable<double>("V");
+        varV.SetSelection(sel);
+
+        adios2::Variable<int> varStep = io.InquireVariable<int>("step");
+
+
+        //std::cout << "Restore mode 1" << std::endl;
+        
+        //std::cout << "Restore mode 2" << std::endl;
+        while (true) {
+            adios2::StepStatus status = reader.BeginStep(); 
+            //status = reader.BeginStep(); 
+            if (status != adios2::StepStatus::OK) {
+                std::cout << "Restoring failed" << std::endl;
+                return 0;
+            }
+            std::vector<int> inStep;
+            reader.Get(varStep, inStep, adios2::Mode::Sync);
+            //std::cout << "Restore mode get step " << inStep[0] << std::endl;
+            if (inStep[0] == end_iter) {
+                //std::cout << "Load latest simulation data" << std::endl;
+                std::vector<double> u;
+                std::vector<double> v;
+                reader.Get<double>(varU, u, adios2::Mode::Sync);
+                reader.Get<double>(varV, v, adios2::Mode::Sync);
+                sim.restore_field(u, v);
+                break;
+            }
+
+        }
+        reader.Close();
+        //std::cout << "Restore mode done" << std::endl;
+    }
 
     adios2::ADIOS adios(settings.adios_config, comm, adios2::DebugON);
 
     adios2::IO io = adios.DeclareIO("SimulationOutput");
 
+    io.SetEngine("BP4");
     if (rank == 0) {
         print_io_settings(io);
         std::cout << "========================================" << std::endl;
@@ -127,17 +193,23 @@ int main(int argc, char **argv)
         std::cout << "========================================" << std::endl;
     }
 
-    io.DefineAttribute<double>("F", settings.F);
-    io.DefineAttribute<double>("k", settings.k);
-    io.DefineAttribute<double>("dt", settings.dt);
-    io.DefineAttribute<double>("Du", settings.Du);
-    io.DefineAttribute<double>("Dv", settings.Dv);
-    io.DefineAttribute<double>("noise", settings.noise);
+// start from beginning
+    //if (!restore_mode) {
+        // io.DefineAttribute<double>("F", settings.F);
+        // io.DefineAttribute<double>("k", settings.k);
+        // io.DefineAttribute<double>("dt", settings.dt);
+        // io.DefineAttribute<double>("Du", settings.Du);
+        // io.DefineAttribute<double>("Dv", settings.Dv);
+        // io.DefineAttribute<double>("noise", settings.noise);
+    //}   
+
+
+
     //define VTK visualization schema as an attribute
-    if(!settings.mesh_type.empty())
-    {
-        define_bpvtk_attribute(settings, io);
-    }
+    // if(!settings.mesh_type.empty())
+    // {
+    //     define_bpvtk_attribute(settings, io);
+    // }
 
     adios2::Variable<double> varU =
         io.DefineVariable<double>("U", {settings.L, settings.L, settings.L},
@@ -212,7 +284,7 @@ int main(int argc, char **argv)
 
     adios2::Variable<int> varStep = io.DefineVariable<int>("step");
 
-    adios2::Engine writer = io.Open(settings.output, adios2::Mode::Write);
+    adios2::Engine writer = io.Open(settings.output, mode);
 
     auto start_total = std::chrono::steady_clock::now();
     auto start_step = std::chrono::steady_clock::now();
@@ -220,42 +292,48 @@ int main(int argc, char **argv)
     std::ofstream log("gray-scott.log");
     log << "step\tcompute_gs\twrite_gs" << std::endl;
 
-    for (int i = 0; i < settings.steps; i++) {
+    for (int i = start_iter; i < settings.steps; i++) {
+        //std::cout << "Simulation at step " << i << std::endl;
         sim.iterate();
 
-        if (i % settings.plotgap == 0) {
+
+        if (!restore_mode && i % settings.plotgap == 0 || 
+            restore_mode && i % settings.plotgap == 0 && i != start_iter) {
+            // if (rank == 0) {
+            //     std::cout << " writing output step     " << i / settings.plotgap
+            //               << std::endl;
+            // }
             if (rank == 0) {
-                std::cout << "Simulation at step " << i
-                          << " writing output step     " << i / settings.plotgap
-                          << std::endl;
+                std::cout << " writing output step     " << i << std::endl;
             }
+
             auto end_compute = std::chrono::steady_clock::now();
 
 
             if(settings.adios_span)
             {
-            	writer.BeginStep();
-            	writer.Put<int>(varStep, &i);
+                writer.BeginStep();
+                writer.Put<int>(varStep, &i);
 
-            	// provide memory directly from adios buffer
-            	adios2::Variable<double>::Span u_span = writer.Put<double>(varU);
-            	adios2::Variable<double>::Span v_span = writer.Put<double>(varV);
+                // provide memory directly from adios buffer
+                adios2::Variable<double>::Span u_span = writer.Put<double>(varU);
+                adios2::Variable<double>::Span v_span = writer.Put<double>(varV);
 
-            	// populate spans
-            	sim.u_noghost(u_span.data());
-            	sim.v_noghost(v_span.data());
+                // populate spans
+                sim.u_noghost(u_span.data());
+                sim.v_noghost(v_span.data());
 
-            	writer.EndStep();
+                writer.EndStep();
             }
             else
             {
-            	std::vector<double> u = sim.u_noghost();
-            	std::vector<double> v = sim.v_noghost();
-            	writer.BeginStep();
-            	writer.Put<int>(varStep, &i);
-            	writer.Put<double>(varU, u.data());
-            	writer.Put<double>(varV, v.data());
-            	writer.EndStep();
+                std::vector<double> u = sim.u_noghost();
+                std::vector<double> v = sim.v_noghost();
+                writer.BeginStep();
+                writer.Put<int>(varStep, &i);
+                writer.Put<double>(varU, u.data());
+                writer.Put<double>(varV, v.data());
+                writer.EndStep();
             }
 
             auto end_step = std::chrono::steady_clock::now();

@@ -24,6 +24,7 @@ public:
     ~GrayScott();
 
     void init();
+    void restore_field(std::vector<double> old_u, std::vector<double> old_v);
     void iterate();
     std::vector<double> u_noghost() const;
     std::vector<double> v_noghost() const;

@@ -44,10 +44,13 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
  
   adios2::IO org_inIO = adios.DeclareIO("NocompressedSimulationOutput");
+  org_inIO.SetEngine("BP4");
   adios2::Engine org_reader = org_inIO.Open(org_pb_filename, adios2::Mode::Read);
-
+  
   adios2::IO dec_inIO = adios.DeclareIO("DecompressedSimulationOutput");
+  dec_inIO.SetEngine("BP4");
   adios2::Engine dec_reader = dec_inIO.Open(dec_pb_filename, adios2::Mode::Read);
+
 
   const adios2::Variable<int> org_inVarStep = org_inIO.InquireVariable<int>("step");
   adios2::Variable<double> org_inVarU;

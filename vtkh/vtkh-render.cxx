@@ -124,6 +124,7 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("DecompressedSimulationOutput");
+  inIO.SetEngine("BP4");
   //inIO.SetEngine("SST");
 
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);

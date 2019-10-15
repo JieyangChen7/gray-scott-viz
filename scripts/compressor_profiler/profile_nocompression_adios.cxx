@@ -27,10 +27,11 @@ int main(int argc, char *argv[]) {
   adios2::ADIOS adios(xml_filename, MPI_COMM_WORLD, adios2::DebugON);
   //const std::string input_fname = "gs.bp";
   adios2::IO inIO = adios.DeclareIO("SimulationOutput");
+  inIO.SetEngine("BP4");
   adios2::Engine reader = inIO.Open(pb_filename, adios2::Mode::Read);
 
-
   const adios2::Variable<int> inVarStep = inIO.InquireVariable<int>("step");
+  
   adios2::Variable<double> inVarU;
   adios2::Variable<double> inVarV;
 
@@ -49,6 +50,7 @@ int main(int argc, char *argv[]) {
   }
 
   adios2::IO outIO = adios.DeclareIO("NocompressedSimulationOutput");
+  outIO.SetEngine("BP4");
   adios2::Engine writer = outIO.Open(output_bp_filename, adios2::Mode::Write);
 
   adios2::Variable<double> varU;

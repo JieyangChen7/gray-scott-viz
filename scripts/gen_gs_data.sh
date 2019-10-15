@@ -46,6 +46,30 @@ gen_gs_data() {
     cd ..
 }
 
+
+# Run GS and get simulation data
+restore_gs_data() {
+    _SIZE=$1
+    _NOISE=$2
+    _STEPS=$3
+    _GAP=$4
+    _ENT_ITER=$5
+    _BPNAME=gs_${_SIZE}_${_NOISE}
+
+
+    [ ! -d "./gs_data" ] && mkdir gs_data
+    cd gs_data
+    cp ../$XMLFILE .
+    cp ../gs_template.json ./${_BPNAME}.json
+    sed -i 's/SIZE/'"$_SIZE/"'g' ./${_BPNAME}.json
+    sed -i 's/STEPS/'"$_STEPS"'/g' ./${_BPNAME}.json
+    sed -i 's/GAP/'"$_GAP"'/g'  ./${_BPNAME}.json
+    sed -i 's/NOISE/'"${_NOISE}"'/g'  ./${_BPNAME}.json
+    sed -i 's/NNNN/'"${_BPNAME}.bp"'/g' ./${_BPNAME}.json
+    mpirun -np $GS_NPROC $GSBIN ./${_BPNAME}.json r ${_ENT_ITER}
+    cd ..
+}
+
 # Filter out variables that we want to keep
 process_gs_data() {
     _SIZE=$1
@@ -429,21 +453,28 @@ get_entropy(){
 
 STORE_U=-1
 STORE_V=0
-SIZE=512
+SIZE=64
 NOISE=0.0
-STEP=3000
-GAP=300
+STEP=300
+GAP=30
 ITER=10
 
 
-#echo 'generating Gray-scott simulation data'
-#gen_gs_data ${SIZE} ${NOISE} ${STEP} ${GAP} 
+echo 'generating Gray-scott simulation data'
+gen_gs_data ${SIZE} ${NOISE} ${STEP} ${GAP} 
 
-#echo 'processing data'
-#process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+STEP=600
+GAP=30
+ITER=20
 
-#echo 'profile read/write without compression'
-#profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+echo 'restore Gray-scott simulation data'
+restore_gs_data ${SIZE} ${NOISE} ${STEP} ${GAP} 270
+
+echo 'processing data'
+process_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
+
+echo 'profile read/write without compression'
+profile_gs_data ${SIZE} ${NOISE} ${STORE_U} ${STORE_V}
 
 
 #measure_surface_area ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${ITER} 0.1
@@ -461,7 +492,7 @@ ITER=10
 # measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 ${STEP} ${GAP} 0.5
 
 #get_deriv ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 0 4 4 0 0 0 10
-get_entropy ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 1000000 0 ${ITER}
+#get_entropy ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 1000000 0 ${ITER}
 
 #echo 'profile read write without compression for SST'
 #SST=1
@@ -473,22 +504,22 @@ get_entropy ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 1000000 0 ${ITER}
 #decompress_gs_data_remote ${SIZE} ${NOISE} ${STORE_U} 0 ${STORE_V} 0 $SST $DIR $NODE2 
 
 
-for COMPRESSOR in 1 2 3 4 5 # 1=MAGRD; 2=SZ-ABS; 3=SZ-REL; 4=SZ=PWL; 5=ZFP
+for COMPRESSOR in 1 #2 3 4 5 # 1=MAGRD; 2=SZ-ABS; 3=SZ-REL; 4=SZ=PWL; 5=ZFP
 do
     echo 'using compressor #' $COMPRESSOR
 
-    for TOL_V in 0.00000001 0.0000001 0.000001 0.00001 0.0001 0.001 0.01 0.1 1 10
+    for TOL_V in 0.00000001 #0.0000001 0.000001 0.00001 0.0001 0.001 0.01 0.1 1 10
     do
         DUMMY=123
         SST=0
-        #echo 'compressing with tolerance = ' $TOL_V
-        #compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        echo 'compressing with tolerance = ' $TOL_V
+        compress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        #echo 'decompressing on data with lossy tolerance = ' $TOL_V
-        #decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
+        echo 'decompressing on data with lossy tolerance = ' $TOL_V
+        decompress_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V $SST
 
-        #echo 'analyzing data'
-        #analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
+        echo 'analyzing data'
+        analyze_gs_data ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V
 
         #echo 'performance test on data with lossy tolerance =' $TOL_V
         #measure_perf ${SIZE} ${NOISE} ${STORE_U} 0 $COMPRESSOR $TOL_V 0 ${STEP} ${GAP} 0.1
