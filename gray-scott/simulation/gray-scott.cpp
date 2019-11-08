@@ -66,7 +66,7 @@ void GrayScott::init_field()
     v.resize(V, 0.0);
     u2.resize(V, 0.0);
     v2.resize(V, 0.0);
-   
+/*   
     for (int x = 0; x < settings.L; x++) { 
 	    for (int y = 0; y < settings.L; y++) { 
 	        for (int z = 0; z < settings.L; z++) { 
@@ -78,7 +78,7 @@ void GrayScott::init_field()
         }
     }
     
-   
+  */ 
     int d = 6;
     for (int x = settings.L / 2 - d; x < settings.L / 2 + d; x++) {
         for (int y = settings.L / 2 - d; y < settings.L / 2 + d; y++) {
@@ -90,7 +90,7 @@ void GrayScott::init_field()
             }
         }
     }
-
+/*
     for (int x = settings.L / 4 - d; x < settings.L / 4 + d; x++) {
         for (int y = settings.L / 4 - d; y < settings.L / 4 + d; y++) {
             for (int z = settings.L / 4 - d; z < settings.L / 4 + d; z++) {
@@ -112,6 +112,8 @@ void GrayScott::init_field()
             }
         }
     }
+
+*/
 }
 
 void GrayScott::restore_field(std::vector<double> old_u, std::vector<double> old_v) {

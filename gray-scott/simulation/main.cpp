@@ -3,10 +3,11 @@
 #include <iostream>
 #include <mpi.h>
 #include <vector>
-
+#include <string>
 #include <adios2.h>
-
+#include <sstream>
 #include "gray-scott.h"
+
 
 void define_bpvtk_attribute(const Settings &s, adios2::IO& io)
 {
@@ -117,8 +118,10 @@ int main(int argc, char **argv)
     int start_iter;
     bool restore_mode = false;
 
+  
+
     // start from beginning
-    if (argc == 2) {
+    if (atoi(argv[2]) == 0 ) {
         if (rank == 0) {
             std::cout << "Start from beginning" << std::endl;
         }
@@ -127,12 +130,12 @@ int main(int argc, char **argv)
     }
 
     // restore mode
-    if (argc == 4 && argv[2][0] == 'r') {
+    if (atoi(argv[2]) > 0) {
         if (rank == 0) {
             std::cout << "Restore mode" << std::endl;
         }
         restore_mode = true;
-        int end_iter = atoi(argv[3]);
+        int end_iter = atoi(argv[2]);
         start_iter = end_iter;
         mode = adios2::Mode::Append;
         adios2::ADIOS adios(settings.adios_config, comm, adios2::DebugON);
@@ -193,7 +196,7 @@ int main(int argc, char **argv)
         std::cout << "========================================" << std::endl;
     }
 
-// start from beginning
+// start from beginning (this may cause when restoring)
     //if (!restore_mode) {
         // io.DefineAttribute<double>("F", settings.F);
         // io.DefineAttribute<double>("k", settings.k);
@@ -211,76 +214,74 @@ int main(int argc, char **argv)
     //     define_bpvtk_attribute(settings, io);
     // }
 
-    adios2::Variable<double> varU =
-        io.DefineVariable<double>("U", {settings.L, settings.L, settings.L},
-                                  {sim.offset_z, sim.offset_y, sim.offset_x},
-                                  {sim.size_z, sim.size_y, sim.size_x});
-
-    adios2::Variable<double> varV =
-        io.DefineVariable<double>("V", {settings.L, settings.L, settings.L},
-                                  {sim.offset_z, sim.offset_y, sim.offset_x},
-                                  {sim.size_z, sim.size_y, sim.size_x});
-
-
     /* added for compression test */
-    // int mode = std::atoi(argv[2]); // 1 compress only u; 2 compress only v; 3 compress both;
-    // int compressor = std::atoi(argv[3]); // 0 no compression; 1 MGARD; 2 SZ; 3 ZFP;
-    // float tolerance_u = std::atof(argv[4]);
-    // float tolerance_v = std::atof(argv[5]);
+    //-1: do not store U; 0: store U/V without compressor;
+    //1: MGARD; 2: SZ-ABS; 3: SZ-REL; 4: SZ-PWR; 5: ZFP;
+    int   compressU  = std::atoi(argv[3]);
+    char* toleranceU = argv[4];
+    int   compressV  = std::atoi(argv[5]);
+    char* toleranceV = argv[6];
 
-    // if (compressor == 1) { // MGARD
-    //     if (mode == 1) { // U
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("mgardCompressor_u", adios2::ops::LossyMGARD);
-    //         varU.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::to_string(tolerance_u)}});
-    //     } else if (mode == 2) { // V
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("mgardCompressor_v", adios2::ops::LossyMGARD);
-    //         varV.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::to_string(tolerance_v)}});
-    //     } else if (mode == 3) { // U&V
-    //         adios2::Operator szOpU =
-    //         adios.DefineOperator("mgardCompressor_u", adios2::ops::LossyMGARD);
-    //         varU.AddOperation(szOpU, {{adios2::ops::mgard::key::tolerance, std::to_string(tolerance_u)}});
-    //         adios2::Operator szOpV =
-    //         adios.DefineOperator("mgardCompressor_v", adios2::ops::LossyMGARD);
-    //         varV.AddOperation(szOpV, {{adios2::ops::mgard::key::tolerance, std::to_string(tolerance_v)}});
-    //     }
-    // } else if (compressor == 2) { //SZ
-    //     if (mode == 1) { // U
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
-    //         varU.AddOperation(szOp, {{adios2::ops::sz::key::accuracy, std::to_string(tolerance_u)}});
-    //     } else if (mode == 2) { // V
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
-    //         varV.AddOperation(szOp, {{adios2::ops::sz::key::accuracy, std::to_string(tolerance_v)}});
-    //     } else if (mode == 3) { // U&V
-    //         adios2::Operator szOpU =
-    //         adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
-    //         varU.AddOperation(szOpU, {{adios2::ops::sz::key::accuracy, std::to_string(tolerance_u)}});
-    //         adios2::Operator szOpV =
-    //         adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
-    //         varV.AddOperation(szOpV, {{adios2::ops::sz::key::accuracy, std::to_string(tolerance_v)}});
-    //     }
-    // } else if (compressor == 3) { //ZFP
-    //     if (mode == 1) { // U
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("ZFPCompressor_u", adios2::ops::LossyZFP);
-    //         varU.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::to_string(tolerance_u)}});
-    //     } else if (mode == 2) { // V
-    //         adios2::Operator szOp =
-    //         adios.DefineOperator("ZFPCompressor_v", adios2::ops::LossyZFP);
-    //         varV.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::to_string(tolerance_v)}});
-    //     } else if (mode == 3) { // U&V
-    //         adios2::Operator szOpU =
-    //         adios.DefineOperator("ZFPCompressor_u", adios2::ops::LossyZFP);
-    //         varU.AddOperation(szOpU, {{adios2::ops::zfp::key::accuracy, std::to_string(tolerance_u)}});
-    //         adios2::Operator szOpV =
-    //         adios.DefineOperator("ZFPCompressor_v", adios2::ops::LossyZFP);
-    //         varV.AddOperation(szOpV, {{adios2::ops::zfp::key::accuracy, std::to_string(tolerance_v)}});
-    //     }
-    // }
+    adios2::Variable<double> varU;
+    adios2::Variable<double> varV;
+    if (compressU > -1) {
+      varU = io.DefineVariable<double>("U", {settings.L, settings.L, settings.L},
+                                       {sim.offset_z, sim.offset_y, sim.offset_x},
+                                       {sim.size_z, sim.size_y, sim.size_x});
+    }
+
+    if (compressV > -1) {
+      varV = io.DefineVariable<double>("V", {settings.L, settings.L, settings.L},
+                                       {sim.offset_z, sim.offset_y, sim.offset_x},
+                                       {sim.size_z, sim.size_y, sim.size_x});
+    }
     
+    if (compressU == 1) { // MGARD
+      std::cout << "add mgard operator" << std::endl;
+      adios2::Operator szOp =
+            adios.DefineOperator("mgardCompressor_u", adios2::ops::LossyMGARD);
+      varU.AddOperation(szOp, {{adios2::ops::mgard::key::tolerance, std::string(toleranceU)}});
+    } else if (compressU == 2) { // SZ-ABS
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
+      varU.AddOperation(szOp, {{"abs", std::string(toleranceU)}});
+    } else if (compressU == 3) { // SZ-REL
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
+      varU.AddOperation(szOp, {{"rel", std::string(toleranceU)}});
+    } else if (compressU == 4) { // SZ-PWE
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_u", adios2::ops::LossySZ);
+      varU.AddOperation(szOp, {{"pw", std::string(toleranceU)}});
+    } else if (compressU == 5) { // ZFP
+      adios2::Operator szOp =
+            adios.DefineOperator("ZFPCompressor_u", adios2::ops::LossyZFP);
+      varU.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::string(toleranceU)}});
+    }
+
+    if (compressV == 1) { // MGARD
+      std::cout << "add mgard operator" << std::endl;
+      adios2::Operator szOp =
+            adios.DefineOperator("mgardCompressor_v", adios2::ops::LossyMGARD);
+      varV.AddOperation(szOp, {{adios2::ops::mgard::key::accuracy, std::string(toleranceV)}});
+    } else if (compressV == 2) { // SZ-ABS
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
+      varV.AddOperation(szOp, {{"abs", std::string(toleranceV)}});
+    } else if (compressV == 3) { // SZ-REL
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
+      varV.AddOperation(szOp, {{"rel", std::string(toleranceV)}});
+    } else if (compressV == 4) { // SZ-PW
+      adios2::Operator szOp =
+            adios.DefineOperator("szCompressor_v", adios2::ops::LossySZ);
+      varV.AddOperation(szOp, {{"pw", std::string(toleranceV)}});
+    } else if (compressV == 5) { // ZFP
+      adios2::Operator szOp =
+            adios.DefineOperator("ZFPCompressor_v", adios2::ops::LossyZFP);
+      varV.AddOperation(szOp, {{adios2::ops::zfp::key::accuracy, std::string(toleranceV)}});
+    }
+
 
     adios2::Variable<int> varStep = io.DefineVariable<int>("step");
 
@@ -292,9 +293,18 @@ int main(int argc, char **argv)
     std::ofstream log("gray-scott.log");
     log << "step\tcompute_gs\twrite_gs" << std::endl;
 
+    std::ofstream results_csv;
+    std::string csv_filename = "sim_" + std::to_string(compressU) + "_" + std::string(toleranceU) + "_" +
+				std::to_string(compressV) + "_" + std::string(toleranceV) + "_" +
+				"rank_" + std::to_string(rank) + ".csv"; 
+    results_csv.open (csv_filename);
+
     for (int i = start_iter; i < settings.steps; i++) {
         //std::cout << "Simulation at step " << i << std::endl;
+        auto t_start = std::chrono::high_resolution_clock::now();
         sim.iterate();
+	auto t_end = std::chrono::high_resolution_clock::now();
+	double sim_time = std::chrono::duration<double>(t_end-t_start).count();
 
 
         if (!restore_mode && i % settings.plotgap == 0 || 
@@ -327,13 +337,33 @@ int main(int argc, char **argv)
             }
             else
             {
+		// redirect stdout
+		std::stringstream buffer;
+  		std::streambuf * old = std::cout.rdbuf(buffer.rdbuf());
+		
+		std::cout << sim_time << ",";
+
                 std::vector<double> u = sim.u_noghost();
                 std::vector<double> v = sim.v_noghost();
                 writer.BeginStep();
-                writer.Put<int>(varStep, &i);
-                writer.Put<double>(varU, u.data());
-                writer.Put<double>(varV, v.data());
+                writer.Put<int>(varStep, &i, adios2::Mode::Sync);
+
+		t_start = std::chrono::high_resolution_clock::now();
+		writer.Put<double>(varU, u.data(), adios2::Mode::Sync);
+                t_end = std::chrono::high_resolution_clock::now();
+		double write_time_u = std::chrono::duration<double>(t_end-t_start).count();
+		std::cout << write_time_u << ",";
+
+		t_start = std::chrono::high_resolution_clock::now();
+		writer.Put<double>(varV, v.data(), adios2::Mode::Sync);
+		t_end = std::chrono::high_resolution_clock::now();
+		double write_time_v = std::chrono::duration<double>(t_end-t_start).count();
+		std::cout << write_time_v << std::endl;
+		results_csv << buffer.str();
                 writer.EndStep();
+
+		// restore stdout
+		std::cout.rdbuf(old);
             }
 
             auto end_step = std::chrono::steady_clock::now();
@@ -345,7 +375,10 @@ int main(int argc, char **argv)
 
             start_step = std::chrono::steady_clock::now();
         }
+	
     }
+
+    results_csv.close();
 
     log.close();
 
